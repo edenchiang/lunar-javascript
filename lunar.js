@@ -245,8 +245,8 @@
           return SolarUtil.WEEK[this.getWeek()];
         },
         /**
-         * 获取当天的阳历周
-         * @param start 星期几作为一周的开始，1234560分别代表星期一至星期天
+         *  獲取當天的陽曆週
+         * @param start 星期幾作為一週的開始，1234560分别代表星期一至星期天
          */
         getSolarWeek:function(start){
           return SolarWeek.fromYmd(this._p.year, this._p.month, this._p.day, start);
@@ -329,9 +329,9 @@
           return this.toYmd();
         },
         toFullString:function(){
-          var s = this.toYmdHms();
+          var s = '國曆 '+this.toYmdHms();
           if(this.isLeapYear()){
-            s += ' 闰年';
+            s += ' 閏年';
           }
           s += ' 星期'+this.getWeekInChinese();
           var festivals = this.getFestivals();
@@ -505,20 +505,20 @@
           return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + d + n - 1524.5;
         },
         getSalaryRate:function(){
-          // 元旦节
+          // 元旦
           if (this._p.month === 1 && this._p.day === 1) {
             return 3;
           }
-          // 劳动节
+          // 勞動節
           if (this._p.month === 5 && this._p.day === 1) {
             return 3;
           }
-          // 国庆
-          if (this._p.month === 10 && this._p.day >= 1 && this._p.day <= 3) {
+          // 國慶
+          if (this._p.month === 10 && this._p.day >= 10 && this._p.day <= 3) {
             return 3;
           }
           var lunar = this.getLunar();
-          // 春节
+          // 春節
           if (lunar.getMonth() === 1 && lunar.getDay() >= 1 && lunar.getDay() <= 3) {
             return 3;
           }
@@ -541,7 +541,472 @@
               return 2;
             }
           } else {
-            // 周末
+            // 週末
+            var week = this.getWeek();
+            if (week === 6 || week === 0) {
+              return 2;
+            }
+          }
+          // 工作日
+          return 1;
+        }
+      };
+    };
+    var _fromYmd = function(y,m,d){
+      var oy = y;
+      var om = m;
+      var od = d;
+      y *= 1;
+      if(isNaN(y)){
+        throw new Error('wrong solar year '+oy);
+      }
+      m *= 1;
+      if(isNaN(m)){
+        throw new Error('wrong solar month '+om);
+      }
+      d *= 1;
+      if(isNaN(d)){
+        throw new Error('wrong solar day '+od);
+      }
+      if(1582===y && 10===m){
+        if(d>4&&d<15){
+          throw new Error('wrong solar year '+y+' month '+m+' day '+d);
+        }
+      }
+      if(m<1||m>12){
+        throw new Error('wrong month ' + m);
+      }
+      if(d<1||d>31){
+        throw new Error('wrong day ' + d);
+      }
+      return {
+        _p:{
+          year:y,
+          month:m,
+          day:d
+        },
+        subtract:function(solar){
+          return SolarUtil.getDaysBetween(solar.getYear(), solar.getMonth(), solar.getDay(), this._p.year, this._p.month, this._p.day);
+        },
+        subtractMinute:function(solar){
+          var days = this.subtract(solar);
+          var cm = this._p.hour * 60 + this._p.minute;
+          var sm = solar.getHour() * 60 + solar.getMinute();
+          var m = cm - sm;
+          if (m < 0) {
+            m += 1440;
+            days--;
+          }
+          m += days * 1440;
+          return m;
+        },
+        isAfter: function(solar) {
+          if (this._p.year > solar.getYear()) {
+            return true;
+          }
+          if (this._p.year < solar.getYear()) {
+            return false;
+          }
+          if (this._p.month > solar.getMonth()) {
+            return true;
+          }
+          if (this._p.month < solar.getMonth()) {
+            return false;
+          }
+          if (this._p.day > solar.getDay()) {
+            return true;
+          }
+          if (this._p.day < solar.getDay()) {
+            return false;
+          }
+          if (this._p.hour > solar.getHour()) {
+            return true;
+          }
+          if (this._p.hour < solar.getHour()) {
+            return false;
+          }
+          if (this._p.minute > solar.getMinute()) {
+            return true;
+          }
+          if (this._p.minute < solar.getMinute()) {
+            return false;
+          }
+          return this._p.second > solar.getSecond();
+        },
+        isBefore: function(solar) {
+          if (this._p.year > solar.getYear()) {
+            return false;
+          }
+          if (this._p.year < solar.getYear()) {
+            return true;
+          }
+          if (this._p.month > solar.getMonth()) {
+            return false;
+          }
+          if (this._p.month < solar.getMonth()) {
+            return true;
+          }
+          if (this._p.day > solar.getDay()) {
+            return false;
+          }
+          if (this._p.day < solar.getDay()) {
+            return true;
+          }
+          if (this._p.hour > solar.getHour()) {
+            return false;
+          }
+          if (this._p.hour < solar.getHour()) {
+            return true;
+          }
+          if (this._p.minute > solar.getMinute()) {
+            return false;
+          }
+          if (this._p.minute < solar.getMinute()) {
+            return true;
+          }
+          return this._p.second < solar.getSecond();
+        },
+        getYear:function(){
+          return this._p.year;
+        },
+        getMonth:function(){
+          return this._p.month;
+        },
+        getDay:function(){
+          return this._p.day;
+        },
+        getHour:function(){
+          return this._p.hour;
+        },
+        getMinute:function(){
+          return this._p.minute;
+        },
+        getSecond:function(){
+          return this._p.second;
+        },
+        getWeek:function(){
+          var start = _fromYmdHms(1582, 10, 15, 0, 0, 0);
+          var y = this._p.year;
+          var m = this._p.month;
+          var d = this._p.day;
+          var current = _fromYmdHms(y, m, d, 0, 0, 0);
+          // 蔡勒公式
+          if (m < 3) {
+            m += 12;
+            y--;
+          }
+          var c = Math.floor(y/100);
+          y = y - c * 100;
+          var x = y + Math.floor(y/4) + Math.floor(c/4) - 2*c;
+          var w;
+          if (current.isBefore(start)) {
+            w = (x + Math.floor((13*(m+1))/5) + d + 2) % 7;
+          } else {
+            w = (x + Math.floor((26*(m+1))/10) + d - 1) % 7;
+          }
+          return (w + 7) % 7;
+        },
+        getWeekInChinese:function(){
+          return SolarUtil.WEEK[this.getWeek()];
+        },
+        /**
+         *  獲取當天的陽曆週
+         * @param start 星期幾作為一週的開始，1234560分别代表星期一至星期天
+         */
+        getSolarWeek:function(start){
+          return SolarWeek.fromYmd(this._p.year, this._p.month, this._p.day, start);
+        },
+        isLeapYear:function(){
+          return SolarUtil.isLeapYear(this._p.year);
+        },
+        getFestivals:function(){
+          var l = [];
+          var f = SolarUtil.FESTIVAL[this._p.month+'-'+this._p.day];
+          if(f){
+            l.push(f);
+          }
+          var weeks = Math.ceil(this._p.day/7);
+          var week = this.getWeek();
+          f = SolarUtil.WEEK_FESTIVAL[this._p.month+'-'+weeks+'-'+week];
+          if(f){
+            l.push(f);
+          }
+          if (this._p.day + 7 > SolarUtil.getDaysOfMonth(this._p.year, this._p.month)) {
+            f = SolarUtil.WEEK_FESTIVAL[this._p.month + '-0-' + week];
+            if (f) {
+              l.push(f);
+            }
+          }
+          return l;
+        },
+        getOtherFestivals:function(){
+          var l=[];
+          var fs=SolarUtil.OTHER_FESTIVAL[this._p.month+'-'+this._p.day];
+          if(fs){
+            l=l.concat(fs);
+          }
+          return l;
+        },
+        getXingzuo:function(){
+          return this.getXingZuo();
+        },
+        getXingZuo:function(){
+          var index = 11;
+          var y = this._p.month*100+this._p.day;
+          if (y >= 321 && y <= 419) {
+            index = 0;
+          } else if (y >= 420 && y <= 520) {
+            index = 1;
+          } else if (y >= 521 && y <= 621) {
+            index = 2;
+          } else if (y >= 622 && y <= 722) {
+            index = 3;
+          } else if (y >= 723 && y <= 822) {
+            index = 4;
+          } else if (y >= 823 && y <= 922) {
+            index = 5;
+          } else if (y >= 923 && y <= 1023) {
+            index = 6;
+          } else if (y >= 1024 && y <= 1122) {
+            index = 7;
+          } else if (y >= 1123 && y <= 1221) {
+            index = 8;
+          } else if (y >= 1222 || y <= 119) {
+            index = 9;
+          } else if (y <= 218) {
+            index = 10;
+          }
+          return SolarUtil.XINGZUO[index];
+        },
+        toYmd:function(){
+          var m = this._p.month;
+          var d = this._p.day;
+          var y = this._p.year + '';
+          while (y.length < 4) {
+            y = '0' + y;
+          }
+          return [y,(m<10?'0':'')+m,(d<10?'0':'')+d].join('-');
+        },
+        toYmdHms:function(){
+          return this.toYmd()+' '+[(this._p.hour<10?'0':'')+this._p.hour,(this._p.minute<10?'0':'')+this._p.minute,(this._p.second<10?'0':'')+this._p.second].join(':');
+        },
+        toString:function(){
+          return this.toYmd();
+        },
+        toFullString:function(){
+          var s = '國曆 '+this.toYmdHms();
+          if(this.isLeapYear()){
+            s += ' 閏年';
+          }
+          s += ' 星期'+this.getWeekInChinese();
+          var festivals = this.getFestivals();
+          for(var i=0,j=festivals.length;i<j;i++){
+            s += ' ('+festivals[i]+')';
+          }
+          s += ' '+this.getXingZuo()+'座';
+          return s;
+        },
+        nextYear:function(years){
+          var oy = years;
+          years *= 1;
+          if (isNaN(years)) {
+            throw new Error('wrong years ' + oy);
+          }
+          var y = this._p.year + years;
+          var m = this._p.month;
+          var d = this._p.day;
+          if (1582 === y && 10 === m) {
+            if (d > 4 && d < 15) {
+              d += 10;
+            }
+          } else if (2 === m) {
+            if (d > 28) {
+              if (!SolarUtil.isLeapYear(y)) {
+                d = 28;
+              }
+            }
+          }
+          return _fromYmdHms(y, m, d, this._p.hour, this._p.minute, this._p.second);
+        },
+        nextMonth:function(months){
+          var om = months;
+          months *= 1;
+          if (isNaN(months)) {
+            throw new Error('wrong months ' + om);
+          }
+          var month = SolarMonth.fromYm(this._p.year, this._p.month).next(months);
+          var y = month.getYear();
+          var m = month.getMonth();
+          var d = this._p.day;
+          if (1582 === y && 10 === m) {
+            if (d > 4 && d < 15) {
+              d += 10;
+            }
+          } else {
+            var maxDay = SolarUtil.getDaysOfMonth(y, m);
+            if (d > maxDay) {
+              d = maxDay;
+            }
+          }
+          return _fromYmdHms(y, m, d, this._p.hour, this._p.minute, this._p.second);
+        },
+        nextDay:function(days){
+          var od = days;
+          days *= 1;
+          if (isNaN(days)) {
+            throw new Error('wrong days ' + od);
+          }
+          var y = this._p.year;
+          var m = this._p.month;
+          var d = this._p.day;
+          if (1582 === y && 10 === m) {
+            if (d > 4) {
+              d -= 10
+            }
+          }
+          if (days > 0) {
+            d += days;
+            var daysInMonth = SolarUtil.getDaysOfMonth(y, m);
+            while (d > daysInMonth) {
+              d -= daysInMonth;
+              m++;
+              if (m > 12) {
+                m = 1;
+                y++;
+              }
+              daysInMonth = SolarUtil.getDaysOfMonth(y, m);
+            }
+          } else if (days < 0) {
+            while (d + days <= 0) {
+              m--;
+              if (m < 1) {
+                m = 12;
+                y--;
+              }
+              d += SolarUtil.getDaysOfMonth(y, m);
+            }
+            d += days;
+          }
+          if (1582 === y && 10 === m) {
+            if (d > 4) {
+              d += 10;
+            }
+          }
+          return _fromYmdHms(y, m, d, this._p.hour, this._p.minute, this._p.second);
+        },
+        nextWorkday:function(days){
+          var od = days;
+          days *= 1;
+          if (isNaN(days)) {
+            throw new Error('wrong days ' + od);
+          }
+          var solar = _fromYmdHms(this._p.year, this._p.month, this._p.day, this._p.hour, this._p.minute, this._p.second);
+          if (days !== 0) {
+            var rest = Math.abs(days);
+            var add = days < 1 ? -1 : 1;
+            while (rest > 0) {
+              solar = solar.next(add);
+              var work = true;
+              var holiday = HolidayUtil.getHoliday(solar.getYear(), solar.getMonth(), solar.getDay());
+              if (!holiday) {
+                var week = solar.getWeek();
+                if (0 === week || 6 === week) {
+                  work = false;
+                }
+              } else {
+                work = holiday.isWork();
+              }
+              if (work) {
+                rest -= 1;
+              }
+            }
+          }
+          return solar;
+        },
+        next:function(days, onlyWorkday){
+          if (onlyWorkday) {
+            return this.nextWorkday(days);
+          }
+          return this.nextDay(days);
+        },
+        nextHour:function(hours){
+          var oh = hours;
+          hours *= 1;
+          if (isNaN(hours)) {
+            throw new Error('wrong hours ' + oh);
+          }
+          var h = this._p.hour + hours;
+          var n = h < 0 ? -1 : 1;
+          var hour = Math.abs(h);
+          var days = Math.floor(hour / 24) * n;
+          hour = (hour % 24) * n;
+          if (hour < 0) {
+            hour += 24;
+            days--;
+          }
+          var solar = this.next(days);
+          return _fromYmdHms(solar.getYear(), solar.getMonth(), solar.getDay(), hour, solar.getMinute(), solar.getSecond());
+        },
+        getLunar:function(){
+          return Lunar.fromSolar(this);
+        },
+        getJulianDay:function(){
+          var y = this._p.year;
+          var m = this._p.month;
+          var d = this._p.day + ((this._p.second / 60 + this._p.minute) / 60 + this._p.hour) / 24;
+          var n = 0;
+          var g = false;
+          if (y * 372 + m * 31 + Math.floor(d) >= 588829) {
+            g = true;
+          }
+          if (m <= 2) {
+            m += 12;
+            y--;
+          }
+          if (g) {
+            n = Math.floor(y / 100);
+            n = 2 - n + Math.floor(n / 4);
+          }
+          return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + d + n - 1524.5;
+        },
+        getSalaryRate:function(){
+          // 元旦
+          if (this._p.month === 1 && this._p.day === 1) {
+            return 3;
+          }
+          // 勞動節
+          if (this._p.month === 5 && this._p.day === 1) {
+            return 3;
+          }
+          // 國慶
+          if (this._p.month === 10 && this._p.day >= 10 && this._p.day <= 3) {
+            return 3;
+          }
+          var lunar = this.getLunar();
+          // 春節
+          if (lunar.getMonth() === 1 && lunar.getDay() >= 1 && lunar.getDay() <= 3) {
+            return 3;
+          }
+          // 端午
+          if (lunar.getMonth() === 5 && lunar.getDay() === 5) {
+            return 3;
+          }
+          // 中秋
+          if (lunar.getMonth() === 8 && lunar.getDay() === 15) {
+            return 3;
+          }
+          // 清明
+          if ('清明' === lunar.getJieQi()) {
+            return 3;
+          }
+          var holiday = HolidayUtil.getHoliday(this._p.year, this._p.month, this._p.day);
+          if (holiday) {
+            // 法定假日非上班
+            if (!holiday.isWork()) {
+              return 2;
+            }
+          } else {
+            // 週末
             var week = this.getWeek();
             if (week === 6 || week === 0) {
               return 2;
@@ -553,6 +1018,7 @@
       };
     };
     var _fromBaZi=function(yearGanZhi,monthGanZhi,dayGanZhi,timeGanZhi,sect,baseYear){
+      // 百忌
       sect *= 1;
       if(isNaN(sect)){
         sect = 2;
@@ -619,6 +1085,7 @@
   })();
   var Lunar = (function(){
     var _computeJieQi = function(o,ly) {
+      // 節氣
       o['jieQiList'] = [];
       o['jieQi'] = {};
       var julianDays = ly.getJieQiJulianDays();
@@ -629,7 +1096,7 @@
       }
     };
     var _computeYear = function(o,solar,year){
-      //以正月初一开始
+      //以正月初一開始
       var offset = year - 4;
       var yearGanIndex = offset % 10;
       var yearZhiIndex = offset % 12;
@@ -642,11 +1109,11 @@
         yearZhiIndex += 12;
       }
 
-      //以立春作为新一年的开始的干支纪年
+      //以立春作為新一年的開始的干支紀年
       var g = yearGanIndex;
       var z = yearZhiIndex;
 
-      //精确的干支纪年，以立春交接时刻为准
+      //精確的干支紀年，以立春交接時刻為準
       var gExact = yearGanIndex;
       var zExact = yearZhiIndex;
 
@@ -654,7 +1121,7 @@
       var solarYmd = solar.toYmd();
       var solarYmdHms = solar.toYmdHms();
 
-      //获取立春的阳历时刻
+      //  獲取立春的陽曆時刻
       var liChun = o['jieQi'][I18n.getMessage('jq.liChun')];
       if (liChun.getYear() !== solarYear) {
         liChun = o['jieQi']['LI_CHUN'];
@@ -662,14 +1129,14 @@
       var liChunYmd = liChun.toYmd();
       var liChunYmdHms = liChun.toYmdHms();
 
-      //阳历和阴历年份相同代表正月初一及以后
+      //陽曆和陰曆年份相同代表正月初一及以后
       if(year===solarYear){
-        //立春日期判断
+        //立春日期判斷
         if(solarYmd<liChunYmd) {
           g--;
           z--;
         }
-        //立春交接时刻判断
+        //立春交接時刻判斷
         if(solarYmdHms<liChunYmdHms) {
           gExact--;
           zExact--;
@@ -698,7 +1165,7 @@
       var end;
       var size = LunarUtil.JIE_QI_IN_USE.length;
 
-      //序号：大雪以前-3，大雪到小寒之间-2，小寒到立春之间-1，立春之后0
+      //序號：大雪以前-3，大雪到小寒之間-2，小寒到立春之間-1，立春之后0
       var index = -3;
       for(i=0;i<size;i+=2){
         end = o.jieQi[LunarUtil.JIE_QI_IN_USE[i]];
@@ -854,6 +1321,365 @@
       }
       return _new(lunarYear, lunarMonth, lunarDay, hour, minute, second, solar, y);
     };
+    var _fromYmd = function(lunarYear,lunarMonth,lunarDay) {
+      var oy = lunarYear;
+      var om = lunarMonth;
+      var od = lunarDay;
+      lunarYear *= 1;
+      if(isNaN(lunarYear)){
+        throw new Error('wrong lunar year '+oy);
+      }
+      lunarMonth *= 1;
+      if(isNaN(lunarMonth)){
+        throw new Error('wrong lunar month '+om);
+      }
+      lunarDay *= 1;
+      if(isNaN(lunarDay)){
+        throw new Error('wrong lunar day '+od);
+      }
+      var y = LunarYear.fromYear(lunarYear);
+      var m = y.getMonth(lunarMonth);
+      if (null == m) {
+        throw new Error('wrong lunar year '+lunarYear+' month '+lunarMonth);
+      }
+      if (lunarDay < 1) {
+        throw new Error('lunar day must bigger than 0');
+      }
+      var days = m.getDayCount();
+      if (lunarDay > days) {
+        throw new Error('only '+days+' days in lunar year '+lunarYear+' month '+lunarMonth);
+      }
+      var noon = Solar.fromJulianDay(m.getFirstJulianDay() + lunarDay - 1);
+      var solar = Solar.fromYmd(noon.getYear(), noon.getMonth(), noon.getDay());
+      if (noon.getYear() !== lunarYear) {
+        y = LunarYear.fromYear(noon.getYear());
+      }
+      return _newOnlyDate(lunarYear, lunarMonth, lunarDay, solar, y);
+    };
+    var _newOnlyDate = function(year,month,day,solar,ly){
+      var gz = _compute(year,12,0,0,solar,ly);
+      return {
+        _p:{
+          lang: I18n.getLanguage(),
+          year:year,
+          month:month,
+          day:day,
+          dayGanIndex:gz.dayGanIndex,
+          dayZhiIndex:gz.dayZhiIndex,
+          dayGanIndexExact:gz.dayGanIndexExact,
+          dayZhiIndexExact:gz.dayZhiIndexExact,
+          dayGanIndexExact2:gz.dayGanIndexExact2,
+          dayZhiIndexExact2:gz.dayZhiIndexExact2,
+          monthGanIndex:gz.monthGanIndex,
+          monthZhiIndex:gz.monthZhiIndex,
+          monthGanIndexExact:gz.monthGanIndexExact,
+          monthZhiIndexExact:gz.monthZhiIndexExact,
+          yearGanIndex:gz.yearGanIndex,
+          yearZhiIndex:gz.yearZhiIndex,
+          yearGanIndexByLiChun:gz.yearGanIndexByLiChun,
+          yearZhiIndexByLiChun:gz.yearZhiIndexByLiChun,
+          yearGanIndexExact:gz.yearGanIndexExact,
+          yearZhiIndexExact:gz.yearZhiIndexExact,
+          weekIndex:gz.weekIndex,
+          solar:solar,
+          eightChar:null
+        },
+        getYear:function(){return this._p.year;},
+        getMonth:function(){return this._p.month;},
+        getDay:function(){return this._p.day;},
+        getDayGanIndex:function(){return this._p.dayGanIndex;},
+        getDayGanIndexExact:function(){return this._p.dayGanIndexExact;},
+        getDayGanIndexExact2:function(){return this._p.dayGanIndexExact2;},
+        getDayZhiIndex:function(){return this._p.dayZhiIndex;},
+        getDayZhiIndexExact:function(){return this._p.dayZhiIndexExact;},
+        getDayZhiIndexExact2:function(){return this._p.dayZhiIndexExact2;},
+        getMonthGanIndex:function(){return this._p.monthGanIndex;},
+        getMonthGanIndexExact:function(){return this._p.monthGanIndexExact;},
+        getMonthZhiIndex:function(){return this._p.monthZhiIndex;},
+        getMonthZhiIndexExact:function(){return this._p.monthZhiIndexExact;},
+        getYearGanIndex:function(){return this._p.yearGanIndex;},
+        getYearGanIndexByLiChun:function(){return this._p.yearGanIndexByLiChun;},
+        getYearGanIndexExact:function(){return this._p.yearGanIndexExact;},
+        getYearZhiIndex:function(){return this._p.yearZhiIndex;},
+        getYearZhiIndexByLiChun:function(){return this._p.yearZhiIndexByLiChun;},
+        getYearZhiIndexExact:function(){return this._p.yearZhiIndexExact;},
+        getGan:function(){return this.getYearGan();},
+        getZhi:function(){return this.getYearZhi();},
+        getYearGan:function(){return LunarUtil.GAN[this._p.yearGanIndex+1];},
+        getYearGanByLiChun:function(){return LunarUtil.GAN[this._p.yearGanIndexByLiChun+1];},
+        getYearGanExact:function(){return LunarUtil.GAN[this._p.yearGanIndexExact+1];},
+        getYearZhi:function(){return LunarUtil.ZHI[this._p.yearZhiIndex+1];},
+        getYearZhiByLiChun:function(){return LunarUtil.ZHI[this._p.yearZhiIndexByLiChun+1];},
+        getYearZhiExact:function(){return LunarUtil.ZHI[this._p.yearZhiIndexExact+1];},
+        getYearInGanZhi:function(){return this.getYearGan()+this.getYearZhi();},
+        getYearInGanZhiByLiChun:function(){return this.getYearGanByLiChun()+this.getYearZhiByLiChun();},
+        getYearInGanZhiExact:function(){return this.getYearGanExact()+this.getYearZhiExact();},
+        getMonthGan:function(){return LunarUtil.GAN[this._p.monthGanIndex+1];},
+        getMonthGanExact:function(){return LunarUtil.GAN[this._p.monthGanIndexExact+1];},
+        getMonthZhi:function(){return LunarUtil.ZHI[this._p.monthZhiIndex+1];},
+        getMonthZhiExact:function(){return LunarUtil.ZHI[this._p.monthZhiIndexExact+1];},
+        getMonthInGanZhi:function(){return this.getMonthGan()+this.getMonthZhi();},
+        getMonthInGanZhiExact:function(){return this.getMonthGanExact()+this.getMonthZhiExact();},
+        getDayGan:function(){return LunarUtil.GAN[this._p.dayGanIndex+1];},
+        getDayGanExact:function(){return LunarUtil.GAN[this._p.dayGanIndexExact+1];},
+        getDayGanExact2:function(){return LunarUtil.GAN[this._p.dayGanIndexExact2+1];},
+        getDayZhi:function(){return LunarUtil.ZHI[this._p.dayZhiIndex+1];},
+        getDayZhiExact:function(){return LunarUtil.ZHI[this._p.dayZhiIndexExact+1];},
+        getDayZhiExact2:function(){return LunarUtil.ZHI[this._p.dayZhiIndexExact2+1];},
+        getDayInGanZhi:function(){return this.getDayGan()+this.getDayZhi();},
+        getDayInGanZhiExact:function(){return this.getDayGanExact()+this.getDayZhiExact();},
+        getDayInGanZhiExact2:function(){return this.getDayGanExact2()+this.getDayZhiExact2();},
+        getShengxiao:function(){return this.getYearShengXiao();},
+        getYearShengXiao:function(){return LunarUtil.SHENGXIAO[this._p.yearZhiIndex+1];},
+        getYearShengXiaoByLiChun:function(){return LunarUtil.SHENGXIAO[this._p.yearZhiIndexByLiChun+1];},
+        getYearShengXiaoExact:function(){return LunarUtil.SHENGXIAO[this._p.yearZhiIndexExact+1];},
+        getYearInChinese:function(){
+          var y = this._p.year+'';
+          var s = '';
+          var zero = '0'.charCodeAt(0);
+          for(var i=0,j=y.length;i<j;i++){
+            s+=LunarUtil.NUMBER[y.charCodeAt(i)-zero];
+          }
+          return s;
+        },
+        getMonthInChinese:function(){
+          var month = this._p.month;
+          return (month<0?'閏':'')+LunarUtil.MONTH[Math.abs(month)];
+        },
+        getDayInChinese:function(){
+          return LunarUtil.DAY[this._p.day];
+        },
+        _checkLang:function(){
+          var lang = I18n.getLanguage();
+          if (this._p.lang !== lang) {
+            for (var i = 0, j = LunarUtil.JIE_QI_IN_USE.length; i < j; i++) {
+              var newKey = LunarUtil.JIE_QI_IN_USE[i];
+              var oldKey = this._p.jieQiList[i];
+              var value = this._p.jieQi[oldKey];
+              this._p.jieQiList[i] = newKey;
+              this._p.jieQi[newKey] = value;
+            }
+            this._p.lang = lang;
+          }
+        },
+        getSeason:function(){
+          return LunarUtil.SEASON[Math.abs(this._p.month)];
+        },
+        getWeek:function(){
+          return this._p.weekIndex;
+        },
+        getWeekInChinese:function(){
+          return SolarUtil.WEEK[this.getWeek()];
+        },
+        getZhiXing:function(){
+          var offset = this._p.dayZhiIndex-this._p.monthZhiIndex;
+          if(offset<0){
+            offset += 12;
+          }
+          return LunarUtil.ZHI_XING[offset+1];
+        },
+        getDayPositionTai:function(){
+          return LunarUtil.POSITION_TAI_DAY[LunarUtil.getJiaZiIndex(this.getDayInGanZhi())];
+        },
+        getMonthPositionTai:function(){
+          var m = this._p.month;
+          if(m<0){
+            return '';
+          }
+          return LunarUtil.POSITION_TAI_MONTH[m-1];
+        },
+        getYueXiang:function(){
+          return LunarUtil.YUE_XIANG[this._p.day];
+        },
+        getSolar:function(){
+          return this._p.solar;
+        },
+        getEightChar:function(){
+          if(!this._p.eightChar){
+            this._p.eightChar=EightChar.fromLunar(this);
+          }
+          return this._p.eightChar;
+        },
+        next:function(days){
+          return this._p.solar.next(days).getLunar();
+        },
+        toString:function(){
+          return this.getYearInChinese()+'年'+this.getMonthInChinese()+'月'+this.getDayInChinese()+'日'+this.getTimeZhi()+'時'+"<br />";
+        },
+        toDateString:function(){
+          return this.getYearInChinese()+'年'+this.getMonthInChinese()+'月'+this.getDayInChinese()+'日吉時'+"<br />";
+        },
+        toFullString:function(){
+          var s = '農曆 '+this.toString();
+          s += ' '+this.getYearInGanZhi()+'年'; //'('+this.getYearShengXiao()+')年';
+          s += ' '+this.getMonthInGanZhi()+'月'; //'('+this.getMonthShengXiao()+')月';
+          s += ' '+this.getDayInGanZhi()+'日'; //'('+this.getDayShengXiao()+')日';
+          s += ' '+this.getTimeInGanZhi()+'時'; //'('+this.getTimeShengXiao()+')時';
+          s += ' 星期'+this.getWeekInChinese()+"<br />";
+          s += ' 沖['+this.getDayChongDesc()+']';
+          s += ' 煞['+this.getDaySha()+']'+"<br />";
+          s += ' 納音['+this.getYearNaYin()+' '+this.getMonthNaYin()+' '+this.getDayNaYin()+' '+this.getTimeNaYin()+']'+"<br />";
+          var festivals = this.getFestivals();
+          var i;
+          var j;
+          for(i=0,j=festivals.length;i<j;i++){
+            s += ' ('+festivals[i]+')';
+          }
+          festivals = this.getOtherFestivals();
+          for(i=0,j=festivals.length;i<j;i++){
+            s += ' ('+festivals[i]+')';
+          }
+          var jq = this.getJieQi();
+          if(jq.length>0){
+            s += ' ['+jq+']';
+          }
+          s += ' '+this.getGong()+'方'+this.getShou()+"<br />";
+          s += ' 星宿['+this.getXiu()+this.getZheng()+this.getAnimal()+']('+this.getXiuLuck()+')'+"<br />";
+          s += ' 彭祖百忌['+this.getPengZuGan()+' '+this.getPengZuZhi()+']'+"<br />";
+          s += ' 喜神方位['+this.getDayPositionXi()+']('+this.getDayPositionXiDesc()+')'+"<br />";
+          s += ' 陽貴神方位['+this.getDayPositionYangGui()+']('+this.getDayPositionYangGuiDesc()+')'+"<br />";
+          s += ' 陰貴神方位['+this.getDayPositionYinGui()+']('+this.getDayPositionYinGuiDesc()+')'+"<br />";
+          s += ' 福神方位['+this.getDayPositionFu()+']('+this.getDayPositionFuDesc()+')'+"<br />";
+          s += ' 財神方位['+this.getDayPositionCai()+']('+this.getDayPositionCaiDesc()+')';
+          
+          return s;
+        },
+        _buildNameAndIndex: function(name, index){
+          return {
+            _p:{
+              name: name,
+              index: index
+            },
+            getName: function(){return this._p.name;},
+            setName: function(name){this._p.name = name;},
+            getIndex: function(){return this._p.index;},
+            setIndex: function(index){this._p.index = index;},
+            toString: function(){return this.getName();},
+            toFullString: function(){return this.getName()+'第'+this.getIndex()+'天';}
+          };
+        },
+        getShuJiu:function(){
+          var currentDay = Solar.fromYmd(this._p.solar.getYear(), this._p.solar.getMonth(), this._p.solar.getDay());
+          var start = this._getJieQiSolar('DONG_ZHI');
+          var startDay = Solar.fromYmd(start.getYear(), start.getMonth(), start.getDay());
+          if (currentDay.isBefore(startDay)) {
+            start = this._getJieQiSolar(I18n.getMessage('jq.dongZhi'));
+            startDay = Solar.fromYmd(start.getYear(), start.getMonth(), start.getDay());
+          }
+          var endDay = Solar.fromYmd(start.getYear(), start.getMonth(), start.getDay()).next(81);
+          if (currentDay.isBefore(startDay) || (!currentDay.isBefore(endDay))) {
+            return null;
+          }
+          var days = currentDay.subtract(startDay);
+          return this._buildNameAndIndex(LunarUtil.NUMBER[Math.floor(days / 9) + 1] + '九', days % 9 + 1);
+        },
+        getFu:function(){
+          var currentDay = Solar.fromYmd(this._p.solar.getYear(), this._p.solar.getMonth(), this._p.solar.getDay());
+          var xiaZhi = this._getJieQiSolar(I18n.getMessage('jq.xiaZhi'));
+          var liQiu = this._getJieQiSolar(I18n.getMessage('jq.liQiu'));
+          var startDay = Solar.fromYmd(xiaZhi.getYear(), xiaZhi.getMonth(), xiaZhi.getDay());
+
+          // 第1個庚日
+          var add = 6 - xiaZhi.getLunar().getDayGanIndex();
+          if (add < 0) {
+            add += 10;
+          }
+          // 第3個庚日，即初伏第1天
+          add += 20;
+          startDay = startDay.next(add);
+
+          // 初伏以前
+          if (currentDay.isBefore(startDay)) {
+            return null;
+          }
+
+          var days = currentDay.subtract(startDay);
+          if (days < 10) {
+            return this._buildNameAndIndex('初伏', days + 1);
+          }
+
+          // 第4個庚日，中伏第1天
+          startDay = startDay.next(10);
+
+          days = currentDay.subtract(startDay);
+          if (days < 10) {
+            return this._buildNameAndIndex('中伏', days + 1);
+          }
+
+          // 第5個庚日，中伏第11天或末伏第1天
+          startDay = startDay.next(10);
+
+          var liQiuDay = Solar.fromYmd(liQiu.getYear(),liQiu.getMonth(),liQiu.getDay());
+
+          days = currentDay.subtract(startDay);
+          // 末伏
+          if (!liQiuDay.isAfter(startDay)) {
+            if (days < 10) {
+              return this._buildNameAndIndex('末伏', days + 1);
+            }
+          } else {
+            // 中伏
+            if (days < 10) {
+              return this._buildNameAndIndex('中伏', days + 11);
+            }
+            // 末伏第1天
+            startDay = startDay.next(10);
+            days = currentDay.subtract(startDay);
+            if (days < 10) {
+              return this._buildNameAndIndex('末伏', days + 1);
+            }
+          }
+          return null;
+        },
+        getLiuYao:function(){
+          return LunarUtil.LIU_YAO[(Math.abs(this._p.month)+this._p.day-2)%6];
+        },
+        getWuHou:function(){
+          var jieQi = this.getPrevJieQi(true);
+          var jq = LunarUtil.find(jieQi.getName(), LunarUtil.JIE_QI);
+          var current = Solar.fromYmd(this._p.solar.getYear(),this._p.solar.getMonth(),this._p.solar.getDay());
+          var startSolar = jieQi.getSolar();
+          var start = Solar.fromYmd(startSolar.getYear(),startSolar.getMonth(),startSolar.getDay());
+          var index = Math.floor(current.subtract(start) / 5);
+          if (index > 2) {
+            index = 2;
+          }
+          return LunarUtil.WU_HOU[(jq.index * 3 + index) % LunarUtil.WU_HOU.length];
+        },
+        getHou:function(){
+          var jieQi = this.getPrevJieQi(true);
+          var days = this._p.solar.subtract(jieQi.getSolar());
+          var max = LunarUtil.HOU.length - 1;
+          var offset = Math.floor(days / 5);
+          if (offset > max) {
+            offset = max;
+          }
+          return jieQi.getName() + ' ' + LunarUtil.HOU[offset];
+        },
+        getDayLu:function(){
+          var gan = LunarUtil.LU[this.getDayGan()];
+          var zhi = LunarUtil.LU[this.getDayZhi()];
+          var lu = gan + '命互禄';
+          if (zhi) {
+            lu += ' ' + zhi + '命進禄';
+          }
+          return lu;
+        },
+        getTime:function(){
+          return LunarTime.fromYmdHms(this._p.year, this._p.month, this._p.day, this._p.hour, this._p.minute, this._p.second);
+        },
+        getTimes:function(){
+          var l = [];
+          l.push(LunarTime.fromYmdHms(this._p.year, this._p.month, this._p.day, 0, 0, 0));
+          for(var i = 0; i < 12; i++){
+            l.push(LunarTime.fromYmdHms(this._p.year, this._p.month, this._p.day, (i+1)*2-1, 0, 0));
+          }
+          return l;
+        },
+        getFoto:function(){return Foto.fromLunar(this);},
+        getTao:function(){return Tao.fromLunar(this);}
+      };
+    };
     var _new = function(year,month,day,hour,minute,second,solar,ly){
       var gz = _compute(year,hour,minute,second,solar,ly);
       return {
@@ -961,7 +1787,7 @@
         },
         getMonthInChinese:function(){
           var month = this._p.month;
-          return (month<0?'闰':'')+LunarUtil.MONTH[Math.abs(month)];
+          return (month<0?'閏':'')+LunarUtil.MONTH[Math.abs(month)];
         },
         getDayInChinese:function(){
           return LunarUtil.DAY[this._p.day];
@@ -1189,7 +2015,7 @@
           return '';
         },
         getDayChongDesc:function(){
-          return '('+this.getDayChongGan()+this.getDayChong()+')'+this.getDayChongShengXiao();
+          return this.getDayChongShengXiao()+'('+this.getDayChongGan()+this.getDayChong()+')';
         },
         getDaySha:function(){
           return LunarUtil.SHA[this.getDayZhi()];
@@ -1327,7 +2153,7 @@
           }
           var solarYmd = this._p.solar.toYmd();
           if(this._p.solar.toYmd() === this._getJieQiSolar(I18n.getMessage('jq.qingMing')).next(-1).toYmd()){
-            l.push('寒食节');
+            l.push('寒食節');
           }
 
           var jq = this._getJieQiSolar(I18n.getMessage('jq.liChun'));
@@ -1368,6 +2194,7 @@
           return l;
         },
         getBaZiNaYin:function(){
+          // 百忌-納音
           var bz = this.getEightChar();
           var l = [];
           l.push(bz.getYearNaYin());
@@ -1377,6 +2204,7 @@
           return l;
         },
         getBaZiShiShenGan:function(){
+          // 百忌-干
           var bz = this.getEightChar();
           var l = [];
           l.push(bz.getYearShiShenGan());
@@ -1386,6 +2214,7 @@
           return l;
         },
         getBaZiShiShenZhi:function(){
+          // 百忌-支
           var bz = this.getEightChar();
           var l = [];
           l.push(bz.getYearShiShenZhi()[0]);
@@ -1446,6 +2275,7 @@
           return LunarUtil.POSITION_TAI_MONTH[m-1];
         },
         getDayYi:function(sect){
+          // 宜
           sect *= 1;
           if(isNaN(sect)){
             sect = 2;
@@ -1453,6 +2283,7 @@
           return LunarUtil.getDayYi(2 === sect ? this.getMonthInGanZhiExact() : this.getMonthInGanZhi(), this.getDayInGanZhi());
         },
         getDayJi:function(sect){
+          // 忌
           sect *= 1;
           if(isNaN(sect)){
             sect = 2;
@@ -1785,16 +2616,21 @@
           return LunarUtil.getXunKong(this.getDayInGanZhiExact2());
         },
         toString:function(){
-          return this.getYearInChinese()+'年'+this.getMonthInChinese()+'月'+this.getDayInChinese();
+          return this.getYearInChinese()+'年'+this.getMonthInChinese()+'月'+this.getDayInChinese()+'日'+this.getTimeZhi()+'時';
+        },
+        toDateString:function(){
+          return this.getYearInChinese()+'年'+this.getMonthInChinese()+'月'+this.getDayInChinese()+'日';
         },
         toFullString:function(){
-          var s = this.toString();
-          s += ' '+this.getYearInGanZhi()+'('+this.getYearShengXiao()+')年';
-          s += ' '+this.getMonthInGanZhi()+'('+this.getMonthShengXiao()+')月';
-          s += ' '+this.getDayInGanZhi()+'('+this.getDayShengXiao()+')日';
-          s += ' '+this.getTimeZhi()+'('+this.getTimeShengXiao()+')时';
-          s += ' 纳音['+this.getYearNaYin()+' '+this.getMonthNaYin()+' '+this.getDayNaYin()+' '+this.getTimeNaYin()+']';
-          s += ' 星期'+this.getWeekInChinese();
+          var s = '農曆 '+this.toString()+"<br />";
+          s += ' '+this.getYearInGanZhi()+'年'; //'('+this.getYearShengXiao()+')年';
+          s += ' '+this.getMonthInGanZhi()+'月'; //'('+this.getMonthShengXiao()+')月';
+          s += ' '+this.getDayInGanZhi()+'日'; //'('+this.getDayShengXiao()+')日';
+          s += ' '+this.getTimeInGanZhi()+'時'; //'('+this.getTimeShengXiao()+')時';
+          s += ' 星期'+this.getWeekInChinese()+"<br />";
+          s += ' 沖['+this.getDayChongDesc()+']';
+          s += ' 煞['+this.getDaySha()+']'+"<br />";
+          s += ' 納音['+this.getYearNaYin()+' '+this.getMonthNaYin()+' '+this.getDayNaYin()+' '+this.getTimeNaYin()+']'+"<br />";
           var festivals = this.getFestivals();
           var i;
           var j;
@@ -1809,16 +2645,15 @@
           if(jq.length>0){
             s += ' ['+jq+']';
           }
-          s += ' '+this.getGong()+'方'+this.getShou();
-          s += ' 星宿['+this.getXiu()+this.getZheng()+this.getAnimal()+']('+this.getXiuLuck()+')';
-          s += ' 彭祖百忌['+this.getPengZuGan()+' '+this.getPengZuZhi()+']';
-          s += ' 喜神方位['+this.getDayPositionXi()+']('+this.getDayPositionXiDesc()+')';
-          s += ' 阳贵神方位['+this.getDayPositionYangGui()+']('+this.getDayPositionYangGuiDesc()+')';
-          s += ' 阴贵神方位['+this.getDayPositionYinGui()+']('+this.getDayPositionYinGuiDesc()+')';
-          s += ' 福神方位['+this.getDayPositionFu()+']('+this.getDayPositionFuDesc()+')';
-          s += ' 财神方位['+this.getDayPositionCai()+']('+this.getDayPositionCaiDesc()+')';
-          s += ' 冲['+this.getDayChongDesc()+']';
-          s += ' 煞['+this.getDaySha()+']';
+          s += ' '+this.getGong()+'方'+this.getShou()+"<br />";
+          s += ' 星宿['+this.getXiu()+this.getZheng()+this.getAnimal()+']('+this.getXiuLuck()+')'+"<br />";
+          s += ' 彭祖百忌['+this.getPengZuGan()+' '+this.getPengZuZhi()+']'+"<br />";
+          s += ' 喜神方位['+this.getDayPositionXi()+']('+this.getDayPositionXiDesc()+')'+"<br />";
+          s += ' 陽貴神方位['+this.getDayPositionYangGui()+']('+this.getDayPositionYangGuiDesc()+')'+"<br />";
+          s += ' 陰貴神方位['+this.getDayPositionYinGui()+']('+this.getDayPositionYinGuiDesc()+')'+"<br />";
+          s += ' 福神方位['+this.getDayPositionFu()+']('+this.getDayPositionFuDesc()+')'+"<br />";
+          s += ' 財神方位['+this.getDayPositionCai()+']('+this.getDayPositionCaiDesc()+')';
+          
           return s;
         },
         _buildNameAndIndex: function(name, index){
@@ -1856,12 +2691,12 @@
           var liQiu = this._getJieQiSolar(I18n.getMessage('jq.liQiu'));
           var startDay = Solar.fromYmd(xiaZhi.getYear(), xiaZhi.getMonth(), xiaZhi.getDay());
 
-          // 第1个庚日
+          // 第1個庚日
           var add = 6 - xiaZhi.getLunar().getDayGanIndex();
           if (add < 0) {
             add += 10;
           }
-          // 第3个庚日，即初伏第1天
+          // 第3個庚日，即初伏第1天
           add += 20;
           startDay = startDay.next(add);
 
@@ -1875,7 +2710,7 @@
             return this._buildNameAndIndex('初伏', days + 1);
           }
 
-          // 第4个庚日，中伏第1天
+          // 第4個庚日，中伏第1天
           startDay = startDay.next(10);
 
           days = currentDay.subtract(startDay);
@@ -1883,7 +2718,7 @@
             return this._buildNameAndIndex('中伏', days + 1);
           }
 
-          // 第5个庚日，中伏第11天或末伏第1天
+          // 第5個庚日，中伏第11天或末伏第1天
           startDay = startDay.next(10);
 
           var liQiuDay = Solar.fromYmd(liQiu.getYear(),liQiu.getMonth(),liQiu.getDay());
@@ -1938,7 +2773,7 @@
           var zhi = LunarUtil.LU[this.getDayZhi()];
           var lu = gan + '命互禄';
           if (zhi) {
-            lu += ' ' + zhi + '命进禄';
+            lu += ' ' + zhi + '命進禄';
           }
           return lu;
         },
@@ -1959,9 +2794,10 @@
     };
     return {
       fromYmdHms:function(y,m,d,hour,minute,second){return _fromYmdHms(y,m,d,hour,minute,second);},
-      fromYmd:function(y,m,d){return _fromYmdHms(y,m,d,0,0,0);},
+      fromYmd:function(y,m,d){return _fromYmd(y,m,d);},
       fromSolar:function(solar){return _fromSolar(solar);},
       fromDate:function(date){return _fromDate(date);}
+      // fromNineStar:function(this.getYearInGanZhi()){return }
     };
   })();
   var SolarWeek = (function(){
@@ -2009,8 +2845,8 @@
           return this._p.start;
         },
         /**
-         * 获取当前日期是在当月第几周
-         * @return number 周序号，从1开始
+         *  獲取當前日期是在當月第幾週
+         * @return number 週序號，從1開始
          */
         getIndex:function(){
           var offset = Solar.fromYmd(this._p.year,this._p.month,1).getWeek() - this._p.start;
@@ -2020,8 +2856,8 @@
           return Math.ceil((this._p.day + offset)/7);
         },
         /**
-         * 获取当前日期是在当年第几周
-         * @return number 周序号，从1开始
+         *  獲取當前日期是在當年第幾週
+         * @return number 週序號，從1開始
          */
         getIndexInYear:function(){
           var offset = Solar.fromYmd(this._p.year,1,1).getWeek() - this._p.start;
@@ -2031,10 +2867,10 @@
           return Math.ceil((SolarUtil.getDaysInYear(this._p.year, this._p.month, this._p.day) + offset)/7);
         },
         /**
-         * 周推移
-         * @param weeks 推移的周数，负数为倒推
-         * @param separateMonth 是否按月单独计算
-         * @return object 推移后的阳历周
+         * 週推移
+         * @param weeks 推移的週數，負數為倒推
+         * @param separateMonth 是否按月單獨計算
+         * @return object 推移後的陽曆週
          */
         next: function (weeks, separateMonth) {
           var ow = weeks;
@@ -2089,8 +2925,8 @@
           }
         },
         /**
-         * 获取本周第一天的阳历日期（可能跨月）
-         * @return object 本周第一天的阳历日期
+         *  獲取本週第一天的陽曆日期（可能跨月）
+         * @return object 本週第一天的陽曆日期
          */
         getFirstDay:function(){
           var solar = Solar.fromYmd(this._p.year, this._p.month, this._p.day);
@@ -2101,8 +2937,8 @@
           return solar.next(-prev);
         },
         /**
-         * 获取本周第一天的阳历日期（仅限当月）
-         * @return object 本周第一天的阳历日期
+         *  獲取本週第一天的陽曆日期（僅限當月）
+         * @return object 本週第一天的陽曆日期
          */
         getFirstDayInMonth:function(){
           var index = 0;
@@ -2116,8 +2952,8 @@
           return days[index];
         },
         /**
-         * 获取本周的阳历日期列表（可能跨月）
-         * @return Array 本周的阳历日期列表
+         *  獲取本週的陽曆日期列表（可能跨月）
+         * @return Array 本週的陽曆日期列表
          */
         getDays:function(){
           var firstDay = this.getFirstDay();
@@ -2129,8 +2965,8 @@
           return l;
         },
         /**
-         * 获取本周的阳历日期列表（仅限当月）
-         * @return Array 本周的阳历日期列表（仅限当月）
+         *  獲取本週的陽曆日期列表（僅限當月）
+         * @return Array 本週的陽曆日期列表（僅限當月）
          */
         getDaysInMonth:function(){
           var days = this.getDays();
@@ -2148,25 +2984,25 @@
           return this.getYear()+'.'+this.getMonth()+'.'+this.getIndex();
         },
         toFullString:function(){
-          return this.getYear()+'年'+this.getMonth()+'月第'+this.getIndex()+'周';
+          return this.getYear()+'年'+this.getMonth()+'月第'+this.getIndex()+'週';
         }
       };
     };
     return {
       /**
-       * 指定年月日生成当天所在的阳历周
+       * 指定年月日生成當天所在的陽曆週
        * @param y 年份
        * @param m 月份
        * @param d 日期
-       * @param start 星期几作为一周的开始，1234560分别代表星期一至星期天
-       * @return object 阳历周
+       * @param start 星期幾作為一週的開始，1234560分别代表星期一至星期天
+       * @return object 陽曆週
        */
       fromYmd:function(y,m,d,start){return _fromYmd(y,m,d,start);},
       /**
-       * 指定日期生成当天所在的阳历周
+       * 指定日期生成當天所在的陽曆週
        * @param date 日期
-       * @param start 星期几作为一周的开始，1234560分别代表星期一至星期天
-       * @return object 阳历周
+       * @param start 星期幾作為一週的開始，1234560分别代表星期一至星期天
+       * @return object 陽曆週
        */
       fromDate:function(date,start){return _fromDate(date,start);}
     };
@@ -2285,15 +3121,15 @@
           return this._p.month;
         },
         /**
-         * 获取当月是第几季度
-         * @return number 季度序号，从1开始
+         *  獲取當月是第幾季度
+         * @return number 季度序號，從1開始
          */
         getIndex:function(){
           return Math.ceil(this._p.month/3);
         },
         /**
          * 季度推移
-         * @param seasons 推移的季度数，负数为倒推
+         * @param seasons 推移的季度數，負數為倒推
          * @return object 推移后的季度
          */
         next:function(seasons){
@@ -2306,7 +3142,7 @@
           return _fromYm(month.getYear(), month.getMonth());
         },
         /**
-         * 获取本季度的月份
+         *  獲取本季度的月份
          * @return Array 本季度的月份列表
          */
         getMonths:function(){
@@ -2358,15 +3194,15 @@
           return this._p.month;
         },
         /**
-         * 获取当月是第几半年
-         * @return number 半年序号，从1开始
+         *  獲取當月是第幾半年
+         * @return number 半年序號，從1開始
          */
         getIndex:function(){
           return Math.ceil(this._p.month/6);
         },
         /**
          * 半年推移
-         * @param halfYears 推移的半年数，负数为倒推
+         * @param halfYears 推移的半年數，負數為倒推
          * @return object 推移后的半年
          */
         next:function(halfYears){
@@ -2379,7 +3215,7 @@
           return _fromYm(month.getYear(), month.getMonth());
         },
         /**
-         * 获取本半年的月份
+         *  獲取本半年的月份
          * @return Array 本半年的月份列表
          */
         getMonths:function(){
@@ -2451,8 +3287,8 @@
     };
   })();
   var LunarYear = (function(){
-    var _YUAN = ['下','上','中'];
-    var _YUN = ['七','八','九','一','二','三','四','五','六'];
+    var _YUAN = ['下','上','中']; // 上中下元
+    var _YUN = ['七','八','九','一','二','三','四','五','六'];  // 九運
     var _LEAP_11 = [75, 94, 170, 265, 322, 398, 469, 553, 583, 610, 678, 735, 754, 773, 849, 887, 936, 1050, 1069, 1126, 1145, 1164, 1183, 1259, 1278, 1308, 1373, 1403, 1441, 1460, 1498, 1555, 1593, 1612, 1631, 1642, 2033, 2128, 2147, 2242, 2614, 2728, 2910, 3062, 3244, 3339, 3616, 3711, 3730, 3825, 4007, 4159, 4197, 4322, 4341, 4379, 4417, 4531, 4599, 4694, 4713, 4789, 4808, 4971, 5085, 5104, 5161, 5180, 5199, 5294, 5305, 5476, 5677, 5696, 5772, 5791, 5848, 5886, 6049, 6068, 6144, 6163, 6258, 6402, 6440, 6497, 6516, 6630, 6641, 6660, 6679, 6736, 6774, 6850, 6869, 6899, 6918, 6994, 7013, 7032, 7051, 7070, 7089, 7108, 7127, 7146, 7222, 7271, 7290, 7309, 7366, 7385, 7404, 7442, 7461, 7480, 7491, 7499, 7594, 7624, 7643, 7662, 7681, 7719, 7738, 7814, 7863, 7882, 7901, 7939, 7958, 7977, 7996, 8034, 8053, 8072, 8091, 8121, 8159, 8186, 8216, 8235, 8254, 8273, 8311, 8330, 8341, 8349, 8368, 8444, 8463, 8474, 8493, 8531, 8569, 8588, 8626, 8664, 8683, 8694, 8702, 8713, 8721, 8751, 8789, 8808, 8816, 8827, 8846, 8884, 8903, 8922, 8941, 8971, 9036, 9066, 9085, 9104, 9123, 9142, 9161, 9180, 9199, 9218, 9256, 9294, 9313, 9324, 9343, 9362, 9381, 9419, 9438, 9476, 9514, 9533, 9544, 9552, 9563, 9571, 9582, 9601, 9639, 9658, 9666, 9677, 9696, 9734, 9753, 9772, 9791, 9802, 9821, 9886, 9897, 9916, 9935, 9954, 9973, 9992];
     var _LEAP_12 = [37, 56, 113, 132, 151, 189, 208, 227, 246, 284, 303, 341, 360, 379, 417, 436, 458, 477, 496, 515, 534, 572, 591, 629, 648, 667, 697, 716, 792, 811, 830, 868, 906, 925, 944, 963, 982, 1001, 1020, 1039, 1058, 1088, 1153, 1202, 1221, 1240, 1297, 1335, 1392, 1411, 1422, 1430, 1517, 1525, 1536, 1574, 3358, 3472, 3806, 3988, 4751, 4941, 5066, 5123, 5275, 5343, 5438, 5457, 5495, 5533, 5552, 5715, 5810, 5829, 5905, 5924, 6421, 6535, 6793, 6812, 6888, 6907, 7002, 7184, 7260, 7279, 7374, 7556, 7746, 7757, 7776, 7833, 7852, 7871, 7966, 8015, 8110, 8129, 8148, 8224, 8243, 8338, 8406, 8425, 8482, 8501, 8520, 8558, 8596, 8607, 8615, 8645, 8740, 8778, 8835, 8865, 8930, 8960, 8979, 8998, 9017, 9055, 9074, 9093, 9112, 9150, 9188, 9237, 9275, 9332, 9351, 9370, 9408, 9427, 9446, 9457, 9465, 9495, 9560, 9590, 9628, 9647, 9685, 9715, 9742, 9780, 9810, 9818, 9829, 9848, 9867, 9905, 9924, 9943, 9962, 10000];
     var _CACHE_YEAR = null;
@@ -2550,62 +3386,62 @@
           if (offset < 0) {
             offset += 10;
           }
-          return name.replace('几', LunarUtil.NUMBER[offset+1]);
+          return name.replace('幾', LunarUtil.NUMBER[offset+1]);
         },
         _getZaoByZhi:function(index, name){
           var offset = index - Solar.fromJulianDay(this.getMonth(1).getFirstJulianDay()).getLunar().getDayZhiIndex();
           if (offset < 0) {
             offset += 12;
           }
-          return name.replace('几', LunarUtil.NUMBER[offset+1]);
+          return name.replace('幾', LunarUtil.NUMBER[offset+1]);
         },
         getTouLiang:function(){
-          return this._getZaoByZhi(0, '几鼠偷粮');
+          return this._getZaoByZhi(0, '幾鼠偷糧');
         },
         getCaoZi:function(){
-          return this._getZaoByZhi(0, '草子几分');
+          return this._getZaoByZhi(0, '草子幾分');
         },
         getGengTian:function(){
-          return this._getZaoByZhi(1, '几牛耕田');
+          return this._getZaoByZhi(1, '幾牛耕田');
         },
         getHuaShou:function(){
-          return this._getZaoByZhi(3, '花收几分');
+          return this._getZaoByZhi(3, '花收幾分');
         },
         getZhiShui:function(){
-          return this._getZaoByZhi(4, '几龙治水');
+          return this._getZaoByZhi(4, '幾龍治水');
         },
         getTuoGu:function(){
-          return this._getZaoByZhi(6, '几马驮谷');
+          return this._getZaoByZhi(6, '幾馬馱谷');
         },
         getQiangMi:function(){
-          return this._getZaoByZhi(9, '几鸡抢米');
+          return this._getZaoByZhi(9, '幾雞搶米');
         },
         getKanCan:function(){
-          return this._getZaoByZhi(9, '几姑看蚕');
+          return this._getZaoByZhi(9, '幾姑看蠶');
         },
         getGongZhu:function(){
-          return this._getZaoByZhi(11, '几屠共猪');
+          return this._getZaoByZhi(11, '幾屠共猪');
         },
         getJiaTian:function(){
-          return this._getZaoByGan(0, '甲田几分');
+          return this._getZaoByGan(0, '甲田幾分');
         },
         getFenBing:function(){
-          return this._getZaoByGan(2, '几人分饼');
+          return this._getZaoByGan(2, '幾人分餅');
         },
         getDeJin:function(){
-          return this._getZaoByGan(7, '几日得金');
+          return this._getZaoByGan(7, '幾日得金');
         },
         getRenBing:function(){
-          return this._getZaoByGan(2, this._getZaoByZhi(2, '几人几丙'));
+          return this._getZaoByGan(2, this._getZaoByZhi(2, '幾人幾丙'));
         },
         getRenChu:function(){
-          return this._getZaoByGan(3, this._getZaoByZhi(2, '几人几锄'));
+          return this._getZaoByGan(3, this._getZaoByZhi(2, '幾人幾鋤'));
         },
         getYuan:function(){
           return _YUAN[Math.floor((this._p.year+2696)/60)%3]+'元';
         },
         getYun:function(){
-          return _YUN[Math.floor((this._p.year+2696)/20)%9]+'运';
+          return _YUN[Math.floor((this._p.year+2696)/20)%9]+'運';
         },
         getNineStar:function(){
           var index = LunarUtil.getJiaZiIndex(this.getGanZhi()) + 1;
@@ -2669,23 +3505,23 @@
         _compute:function(){
           this._p.months = [];
           this._p.jieQiJulianDays = [];
-          // 节气
+          // 節氣
           var jq = [];
           // 合朔，即每月初一
           var hs = [];
-          // 每月天数，长度15
+          // 每月天數，長度15
           var dayCounts = [];
           var months = [];
           var i;
           var j;
           var currentYear = this._p.year;
           var jd = Math.floor((currentYear - 2000) * 365.2422 + 180);
-          // 355是2000.12冬至，得到较靠近jd的冬至估计值
+          // 355是2000.12冬至，得到較靠近jd的冬至估計值
           var w = Math.floor((jd - 355 + 183) / 365.2422) * 365.2422 + 355;
           if (ShouXingUtil.calcQi(w) > jd) {
             w -= 365.2422;
           }
-          // 25个节气时刻(北京时间)，从冬至开始到下一个冬至以后
+          // 25個節氣時刻(北京時間)，從冬至開始到下一個冬至以后
           for (i = 0; i < 26; i++) {
             jq.push(ShouXingUtil.calcQi(w + 15.2184 * i));
           }
@@ -2700,12 +3536,12 @@
             this._p.jieQiJulianDays.push(jd + Solar.J2000);
           }
 
-          // 冬至前的初一，今年"首朔"的日月黄经差w
+          // 冬至前的初一，今年"首朔"的日月黄經差w
           w = ShouXingUtil.calcShuo(jq[0]);
           if (w > jq[0]) {
             w -= 29.53;
           }
-          // 递推每月初一
+          // 遞推每月初一
           for (i = 0; i < 16; i++) {
             hs.push(ShouXingUtil.calcShuo(w + 29.5306 * i));
           }
@@ -2953,7 +3789,7 @@
             }
           }
         },
-        toString:function(){return this.getYear()+'年'+(this.isLeap()?'闰':'')+LunarUtil.MONTH[Math.abs(this.getMonth())]+'月('+this.getDayCount()+')天';}
+        toString:function(){return this.getYear()+'年'+(this.isLeap()?'閏':'')+LunarUtil.MONTH[Math.abs(this.getMonth())]+'月('+this.getDayCount()+')天';}
       };
     };
     return {
@@ -2962,6 +3798,7 @@
     };
   })();
   var ShouXingUtil = (function(){
+    // 未知
     var _decode = function(s) {
       var o = '0000000000';
       var o2 = o + o;
@@ -3597,145 +4434,84 @@
         '12-25': '{jr.shengDan}'
       },
       OTHER_FESTIVAL:{
-        '1-8':['周恩来逝世纪念日'],
-        '1-10':['中国人民警察节'],
-        '1-14':['日记情人节'],
-        '1-21':['列宁逝世纪念日'],
-        '1-26':['国际海关日'],
-        '1-27':['国际大屠杀纪念日'],
-        '2-2':['世界湿地日'],
+        '1-26':['國際海關日'],
+        '1-27':['國際大屠殺紀念日'],
+        '2-2':['世界濕地日'],
         '2-4':['世界抗癌日'],
-        '2-7':['京汉铁路罢工纪念日'],
-        '2-10':['国际气象节'],
-        '2-19':['邓小平逝世纪念日'],
-        '2-20':['世界社会公正日'],
-        '2-21':['国际母语日'],
-        '2-24':['第三世界青年日'],
-        '3-1':['国际海豹日'],
-        '3-3':['世界野生动植物日', '全国爱耳日'],
-        '3-5':['周恩来诞辰纪念日', '中国青年志愿者服务日'],
+        '2-10':['國際氣象節'],
+        '2-14':['日記情人節'],
+        '2-20':['世界社會公正日'],
+        '2-21':['國際母語日'],
+        '3-1':['國際海豹日'],
+        '3-3':['世界野生動植物日'],
         '3-6':['世界青光眼日'],
-        '3-7':['女生节'],
-        '3-12':['孙中山逝世纪念日'],
-        '3-14':['马克思逝世纪念日', '白色情人节'],
-        '3-17':['国际航海日'],
-        '3-18':['全国科技人才活动日', '全国爱肝日'],
-        '3-20':['国际幸福日'],
-        '3-21':['世界森林日', '世界睡眠日', '国际消除种族歧视日'],
+        '3-8':['婦幼節'],
+        '3-12':['孫中山逝世紀念日'],
+        '3-14':['白色情人節'],
+        '3-17':['國際航海日'],
+        '3-20':['國際幸福日'],
+        '3-21':['世界森林日', '世界睡眠日', '國際消除種族歧視日'],
         '3-22':['世界水日'],
-        '3-23':['世界气象日'],
-        '3-24':['世界防治结核病日'],
-        '3-29':['中国黄花岗七十二烈士殉难纪念日'],
-        '4-2':['国际儿童图书日', '世界自闭症日'],
-        '4-4':['国际地雷行动日'],
-        '4-7':['世界卫生日'],
-        '4-8':['国际珍稀动物保护日'],
+        '3-23':['世界氣象日'],
+        '3-24':['世界防治結核病日'],
+        '4-2':['國際兒童圖書日', '世界自閉症日'],
+        '4-4':['兒童節'],
+        '4-7':['世界衛生日'],
+        '4-8':['國際珍稀動物保護日'],
         '4-12':['世界航天日'],
-        '4-14':['黑色情人节'],
-        '4-15':['全民国家安全教育日'],
-        '4-22':['世界地球日', '列宁诞辰纪念日'],
-        '4-23':['世界读书日'],
-        '4-24':['中国航天日'],
-        '4-25':['儿童预防接种宣传日'],
-        '4-26':['世界知识产权日', '全国疟疾日'],
-        '4-28':['世界安全生产与健康日'],
-        '4-30':['全国交通安全反思日'],
-        '5-2':['世界金枪鱼日'],
+        '4-15':['全民國家安全教育日'],
+        '4-22':['世界地球日'],
+        '4-23':['世界讀書日'],
+        '4-26':['世界知識產權日'],
+        '4-28':['世界安全生產與健康日'],
         '5-3':['世界新闻自由日'],
-        '5-5':['马克思诞辰纪念日'],
-        '5-8':['世界红十字日'],
+        '5-8':['世界紅十字日'],
         '5-11':['世界肥胖日'],
-        '5-12':['全国防灾减灾日', '护士节'],
-        '5-14':['玫瑰情人节'],
-        '5-15':['国际家庭日'],
-        '5-19':['中国旅游日'],
-        '5-20':['网络情人节'],
-        '5-22':['国际生物多样性日'],
-        '5-25':['525心理健康节'],
-        '5-27':['上海解放日'],
-        '5-29':['国际维和人员日'],
-        '5-30':['中国五卅运动纪念日'],
-        '5-31':['世界无烟日'],
-        '6-3':['世界自行车日'],
-        '6-5':['世界环境日'],
-        '6-6':['全国爱眼日'],
+        '5-12':['護士節'],
+        '5-15':['國際家庭日'],
+        '5-22':['國際生物多樣性日'],
+        '5-31':['世界無烟日'],
+        '6-3':['世界自行車日'],
+        '6-5':['世界環境日'],
         '6-8':['世界海洋日'],
-        '6-11':['中国人口日'],
-        '6-14':['世界献血日', '亲亲情人节'],
-        '6-17':['世界防治荒漠化与干旱日'],
-        '6-20':['世界难民日'],
-        '6-21':['国际瑜伽日'],
-        '6-25':['全国土地日'],
-        '6-26':['国际禁毒日', '联合国宪章日'],
-        '7-1':['香港回归纪念日'],
-        '7-6':['国际接吻日', '朱德逝世纪念日'],
-        '7-7':['七七事变纪念日'],
-        '7-11':['世界人口日', '中国航海日'],
-        '7-14':['银色情人节'],
-        '7-18':['曼德拉国际日'],
-        '7-30':['国际友谊日'],
-        '8-3':['男人节'],
-        '8-5':['恩格斯逝世纪念日'],
-        '8-6':['国际电影节'],
-        '8-8':['全民健身日'],
-        '8-9':['国际土著人日'],
-        '8-12':['国际青年节'],
-        '8-14':['绿色情人节'],
-        '8-19':['世界人道主义日', '中国医师节'],
-        '8-22':['邓小平诞辰纪念日'],
-        '8-29':['全国测绘法宣传日'],
-        '9-3':['中国抗日战争胜利纪念日'],
-        '9-5':['中华慈善日'],
-        '9-8':['世界扫盲日'],
-        '9-9':['毛泽东逝世纪念日', '全国拒绝酒驾日'],
-        '9-14':['世界清洁地球日', '相片情人节'],
-        '9-15':['国际民主日'],
-        '9-16':['国际臭氧层保护日'],
-        '9-17':['世界骑行日'],
-        '9-18':['九一八事变纪念日'],
-        '9-20':['全国爱牙日'],
-        '9-21':['国际和平日'],
-        '9-27':['世界旅游日'],
-        '9-30':['中国烈士纪念日'],
-        '10-1':['国际老年人日'],
-        '10-2':['国际非暴力日'],
-        '10-4':['世界动物日'],
-        '10-11':['国际女童日'],
-        '10-10':['辛亥革命纪念日'],
-        '10-13':['国际减轻自然灾害日', '中国少年先锋队诞辰日'],
-        '10-14':['葡萄酒情人节'],
-        '10-16':['世界粮食日'],
-        '10-17':['全国扶贫日'],
-        '10-20':['世界统计日'],
-        '10-24':['世界发展信息日', '程序员节'],
-        '10-25':['抗美援朝纪念日'],
-        '11-5':['世界海啸日'],
-        '11-8':['记者节'],
-        '11-9':['全国消防日'],
-        '11-11':['光棍节'],
-        '11-12':['孙中山诞辰纪念日'],
-        '11-14':['电影情人节'],
-        '11-16':['国际宽容日'],
-        '11-17':['国际大学生节'],
-        '11-19':['世界厕所日'],
-        '11-28':['恩格斯诞辰纪念日'],
-        '11-29':['国际声援巴勒斯坦人民日'],
-        '12-1':['世界艾滋病日'],
-        '12-2':['全国交通安全日'],
-        '12-3':['世界残疾人日'],
-        '12-4':['全国法制宣传日'],
-        '12-5':['世界弱能人士日', '国际志愿人员日'],
-        '12-7':['国际民航日'],
-        '12-9':['世界足球日', '国际反腐败日'],
-        '12-10':['世界人权日'],
-        '12-11':['国际山岳日'],
-        '12-12':['西安事变纪念日'],
-        '12-13':['国家公祭日'],
-        '12-14':['拥抱情人节'],
-        '12-18':['国际移徙者日'],
-        '12-26':['毛泽东诞辰纪念日']
+        '6-14':['世界獻血日'],
+        '6-17':['世界防治荒漠化與干旱日'],
+        '6-20':['世界難民日'],
+        '6-21':['國際瑜伽日'],
+        '6-26':['國際禁毒日'],
+        '7-30':['國際友誼日'],
+        '8-6':['國際電影節'],
+        '8-8':['父親節'],
+        '8-9':['國際土著人日'],
+        '8-12':['國際青年節'],
+        '8-19':['世界人道主义日'],
+        '9-8':['世界掃盲日'],
+        '9-14':['世界清洁地球日'],
+        '9-15':['國際民主日'],
+        '9-16':['國際臭氧層保護日'],
+        '9-17':['世界騎行日'],
+        '9-21':['國際和平日'],
+        '9-27':['世界旅遊日'],
+        '10-1':['國際老年人日'],
+        '10-2':['國際非暴力日'],
+        '10-4':['世界動物日'],
+        '10-11':['國際女童日'],
+        '10-13':['國際減輕自然災害日'],
+        '10-16':['世界糧食日'],
+        '10-20':['世界統計日'],
+        '10-24':['世界發展信息日', '軟體工程師節'],
+        '11-5':['世界海嘯日'],
+        '11-12':['國父誕辰紀念日'],
+        '11-17':['國際大學生節'],
+        '11-19':['世界廁所日'],
+        '12-5':['世界弱能人士日', '國際志愿人員日'],
+        '12-7':['國際民航日'],
+        '12-9':['世界足球日', '國際反腐敗日'],
+        '12-10':['世界人權日'],
+        '12-11':['國際山岳日'],
+        '12-18':['國際移徙者日'],
       },
-      WEEK_FESTIVAL:{'3-0-1':'全国中小学生安全教育日','5-2-0':'母亲节','5-3-0':'全国助残日','6-3-0':'父亲节','9-3-6':'全民国防教育日','10-1-1':'世界住房日','11-4-4':'感恩节'},
+      WEEK_FESTIVAL:{'5-2-0':'母親節','11-4-4':'感恩節'},
       isLeapYear:function(year){
         if (year < 1600) {
           return year % 4 === 0;
@@ -3867,8 +4643,65 @@
   var LunarUtil = (function(){
     return {
       BASE_MONTH_ZHI_INDEX:2,
-      JIE_QI: ['{jq.dongZhi}', '{jq.xiaoHan}', '{jq.daHan}', '{jq.liChun}', '{jq.yuShui}', '{jq.jingZhe}', '{jq.chunFen}', '{jq.qingMing}', '{jq.guYu}', '{jq.liXia}', '{jq.xiaoMan}', '{jq.mangZhong}', '{jq.xiaZhi}', '{jq.xiaoShu}', '{jq.daShu}', '{jq.liQiu}', '{jq.chuShu}', '{jq.baiLu}', '{jq.qiuFen}', '{jq.hanLu}', '{jq.shuangJiang}', '{jq.liDong}', '{jq.xiaoXue}', '{jq.daXue}'],
-      JIE_QI_IN_USE: ['DA_XUE', '{jq.dongZhi}', '{jq.xiaoHan}', '{jq.daHan}', '{jq.liChun}', '{jq.yuShui}', '{jq.jingZhe}', '{jq.chunFen}', '{jq.qingMing}', '{jq.guYu}', '{jq.liXia}', '{jq.xiaoMan}', '{jq.mangZhong}', '{jq.xiaZhi}', '{jq.xiaoShu}', '{jq.daShu}', '{jq.liQiu}', '{jq.chuShu}', '{jq.baiLu}', '{jq.qiuFen}', '{jq.hanLu}', '{jq.shuangJiang}', '{jq.liDong}', '{jq.xiaoXue}', '{jq.daXue}', 'DONG_ZHI', 'XIAO_HAN', 'DA_HAN', 'LI_CHUN', 'YU_SHUI', 'JING_ZHE'],
+      JIE_QI: [
+        '{jq.dongZhi}',
+        '{jq.xiaoHan}',
+        '{jq.daHan}',
+        '{jq.liChun}',
+        '{jq.yuShui}',
+        '{jq.jingZhe}',
+        '{jq.chunFen}',
+        '{jq.qingMing}',
+        '{jq.guYu}',
+        '{jq.liXia}',
+        '{jq.xiaoMan}',
+        '{jq.mangZhong}',
+        '{jq.xiaZhi}',
+        '{jq.xiaoShu}',
+        '{jq.daShu}',
+        '{jq.liQiu}',
+        '{jq.chuShu}',
+        '{jq.baiLu}',
+        '{jq.qiuFen}',
+        '{jq.hanLu}',
+        '{jq.shuangJiang}',
+        '{jq.liDong}',
+        '{jq.xiaoXue}',
+        '{jq.daXue}'
+      ],
+      JIE_QI_IN_USE: [
+        'DA_XUE',
+        '{jq.dongZhi}',
+        '{jq.xiaoHan}',
+        '{jq.daHan}',
+        '{jq.liChun}',
+        '{jq.yuShui}',
+        '{jq.jingZhe}',
+        '{jq.chunFen}',
+        '{jq.qingMing}',
+        '{jq.guYu}',
+        '{jq.liXia}',
+        '{jq.xiaoMan}',
+        '{jq.mangZhong}',
+        '{jq.xiaZhi}',
+        '{jq.xiaoShu}',
+        '{jq.daShu}',
+        '{jq.liQiu}',
+        '{jq.chuShu}',
+        '{jq.baiLu}',
+        '{jq.qiuFen}',
+        '{jq.hanLu}',
+        '{jq.shuangJiang}',
+        '{jq.liDong}',
+        '{jq.xiaoXue}',
+        '{jq.daXue}',
+        'DONG_ZHI',
+        'XIAO_HAN',
+        'DA_HAN',
+        'LI_CHUN',
+        'YU_SHUI',
+        'JING_ZHE'
+      ],
       CHANG_SHENG_OFFSET: {
         '{tg.jia}':1,
         '{tg.bing}':10,
@@ -3881,8 +4714,35 @@
         '{tg.xin}':0,
         '{tg.gui}':3
       },
-      MONTH_ZHI:['', '{dz.yin}', '{dz.mao}', '{dz.chen}', '{dz.si}', '{dz.wu}', '{dz.wei}', '{dz.shen}', '{dz.you}', '{dz.xu}', '{dz.hai}', '{dz.zi}', '{dz.chou}'],
-      CHANG_SHENG:['{ds.changSheng}', '{ds.muYu}', '{ds.guanDai}', '{ds.linGuan}', '{ds.diWang}', '{ds.shuai}', '{ds.bing}', '{ds.si}', '{ds.mu}', '{ds.jue}', '{ds.tai}', '{ds.yang}'],
+      MONTH_ZHI:[
+        '',
+        '{dz.yin}',
+        '{dz.mao}',
+        '{dz.chen}',
+        '{dz.si}',
+        '{dz.wu}',
+        '{dz.wei}',
+        '{dz.shen}',
+        '{dz.you}',
+        '{dz.xu}',
+        '{dz.hai}',
+        '{dz.zi}',
+        '{dz.chou}'
+      ],
+      CHANG_SHENG:[
+        '{ds.changSheng}',
+        '{ds.muYu}',
+        '{ds.guanDai}',
+        '{ds.linGuan}',
+        '{ds.diWang}',
+        '{ds.shuai}',
+        '{ds.bing}',
+        '{ds.si}',
+        '{ds.mu}',
+        '{ds.jue}',
+        '{ds.tai}',
+        '{ds.yang}'
+      ],
       XUN:[
         '{jz.jiaZi}',
         '{jz.jiaXu}',
@@ -3982,16 +4842,117 @@
         '{h.huShi}',
         '{h.liTing}'
       ],
-      GAN:['', '{tg.jia}', '{tg.yi}', '{tg.bing}', '{tg.ding}', '{tg.wu}', '{tg.ji}', '{tg.geng}', '{tg.xin}', '{tg.ren}', '{tg.gui}'],
-      POSITION_XI:['', '{bg.gen}', '{bg.qian}', '{bg.kun}', '{bg.li}', '{bg.xun}', '{bg.gen}', '{bg.qian}', '{bg.kun}', '{bg.li}', '{bg.xun}'],
-      POSITION_YANG_GUI:['', '{bg.kun}', '{bg.kun}', '{bg.dui}', '{bg.qian}', '{bg.gen}', '{bg.kan}', '{bg.li}', '{bg.gen}', '{bg.zhen}', '{bg.xun}'],
-      POSITION_YIN_GUI:['', '{bg.gen}', '{bg.kan}', '{bg.qian}', '{bg.dui}', '{bg.kun}', '{bg.kun}', '{bg.gen}', '{bg.li}', '{bg.xun}', '{bg.zhen}'],
-      POSITION_FU:['', '{bg.xun}', '{bg.xun}', '{bg.zhen}', '{bg.zhen}', '{bg.kan}', '{bg.li}', '{bg.kun}', '{bg.kun}', '{bg.qian}', '{bg.dui}'],
-      POSITION_FU_2:['', '{bg.kan}', '{bg.kun}', '{bg.qian}', '{bg.xun}', '{bg.gen}', '{bg.kan}', '{bg.kun}', '{bg.qian}', '{bg.xun}', '{bg.gen}'],
-      POSITION_CAI:['', '{bg.gen}', '{bg.gen}', '{bg.kun}', '{bg.kun}', '{bg.kan}', '{bg.kan}', '{bg.zhen}', '{bg.zhen}', '{bg.li}', '{bg.li}'],
-      POSITION_TAI_SUI_YEAR: ['{bg.kan}', '{bg.gen}', '{bg.gen}', '{bg.zhen}', '{bg.xun}', '{bg.xun}', '{bg.li}', '{bg.kun}', '{bg.kun}', '{bg.dui}', '{bg.kan}', '{bg.kan}'],
-      POSITION_GAN: ['{bg.zhen}', '{bg.zhen}', '{bg.li}', '{bg.li}', '{ps.center}', '{ps.center}', '{bg.dui}', '{bg.dui}', '{bg.kan}', '{bg.kan}'],
-      POSITION_ZHI: ['{bg.kan}', '{ps.center}', '{bg.zhen}', '{bg.zhen}', '{ps.center}', '{bg.li}', '{bg.li}', '{ps.center}', '{bg.dui}', '{bg.dui}', '{ps.center}', '{bg.kan}'],
+      GAN:[
+        '',
+        '{tg.jia}',
+        '{tg.yi}',
+        '{tg.bing}',
+        '{tg.ding}',
+        '{tg.wu}',
+        '{tg.ji}',
+        '{tg.geng}',
+        '{tg.xin}',
+        '{tg.ren}',
+        '{tg.gui}'
+      ],
+      POSITION_XI:[
+        '',
+        '{bg.gen}',
+        '{bg.qian}',
+        '{bg.kun}',
+        '{bg.li}',
+        '{bg.xun}',
+        '{bg.gen}',
+        '{bg.qian}',
+        '{bg.kun}',
+        '{bg.li}',
+        '{bg.xun}'
+      ],
+      POSITION_YANG_GUI:[
+        '',
+        '{bg.kun}',
+        '{bg.kun}',
+        '{bg.dui}',
+        '{bg.qian}',
+        '{bg.gen}',
+        '{bg.kan}',
+        '{bg.li}',
+        '{bg.gen}',
+        '{bg.zhen}',
+        '{bg.xun}'
+      ],
+      POSITION_YIN_GUI:[
+        '',
+        '{bg.gen}',
+        '{bg.kan}',
+        '{bg.qian}',
+        '{bg.dui}',
+        '{bg.kun}',
+        '{bg.kun}',
+        '{bg.gen}',
+        '{bg.li}',
+        '{bg.xun}',
+        '{bg.zhen}'
+      ],
+      POSITION_FU:[
+        '',
+        '{bg.xun}',
+        '{bg.xun}',
+        '{bg.zhen}',
+        '{bg.zhen}',
+        '{bg.kan}',
+        '{bg.li}',
+        '{bg.kun}',
+        '{bg.kun}',
+        '{bg.qian}',
+        '{bg.dui}'
+      ],
+      POSITION_FU_2:[
+        '',
+        '{bg.kan}',
+        '{bg.kun}',
+        '{bg.qian}',
+        '{bg.xun}',
+        '{bg.gen}',
+        '{bg.kan}',
+        '{bg.kun}',
+        '{bg.qian}',
+        '{bg.xun}',
+        '{bg.gen}'
+      ],
+      POSITION_CAI:[
+        '',
+        '{bg.gen}',
+        '{bg.gen}',
+        '{bg.kun}',
+        '{bg.kun}',
+        '{bg.kan}',
+        '{bg.kan}',
+        '{bg.zhen}',
+        '{bg.zhen}',
+        '{bg.li}',
+        '{bg.li}'
+      ],
+      POSITION_TAI_SUI_YEAR:[
+        '{bg.kan}',
+        '{bg.gen}',
+        '{bg.gen}',
+        '{bg.zhen}',
+        '{bg.xun}',
+        '{bg.xun}',
+        '{bg.li}',
+        '{bg.kun}',
+        '{bg.kun}',
+        '{bg.dui}',
+        '{bg.kan}',
+        '{bg.kan}'
+      ],
+      POSITION_GAN:[
+        '{bg.zhen}', '{bg.zhen}', '{bg.li}', '{bg.li}', '{ps.center}', '{ps.center}', '{bg.dui}', '{bg.dui}', '{bg.kan}', '{bg.kan}'
+      ],
+      POSITION_ZHI:[
+        '{bg.kan}', '{ps.center}', '{bg.zhen}', '{bg.zhen}', '{ps.center}', '{bg.li}', '{bg.li}', '{ps.center}', '{bg.dui}', '{bg.dui}', '{ps.center}', '{bg.kan}'
+      ],
       POSITION_TAI_DAY:[
         '{ts.zhan}{ts.men}{ts.dui} {ps.wai}{ps.dongNan}',
         '{ts.dui}{ts.mo}{ts.ce} {ps.wai}{ps.dongNan}',
@@ -4068,7 +5029,21 @@
         '{ts.zhan}{ts.zao}{ts.lu}',
         '{ts.zhan}{ts.fang}{ts.chuang}'
       ],
-      ZHI:['', '{dz.zi}', '{dz.chou}', '{dz.yin}', '{dz.mao}', '{dz.chen}', '{dz.si}', '{dz.wu}', '{dz.wei}', '{dz.shen}', '{dz.you}', '{dz.xu}', '{dz.hai}'],
+      ZHI:[
+        '',
+        '{dz.zi}',
+        '{dz.chou}',
+        '{dz.yin}',
+        '{dz.mao}',
+        '{dz.chen}',
+        '{dz.si}',
+        '{dz.wu}',
+        '{dz.wei}',
+        '{dz.shen}',
+        '{dz.you}',
+        '{dz.xu}',
+        '{dz.hai}'
+      ],
       ZHI_XING:[
         '',
         '{zx.jian}',
@@ -4146,7 +5121,21 @@
         '{jz.renXu}',
         '{jz.guiHai}'
       ],
-      TIAN_SHEN:['', '{sn.qingLong}', '{sn.mingTang}', '{sn.tianXing}', '{sn.zhuQue}', '{sn.jinKui}', '{sn.tianDe}', '{sn.baiHu}', '{sn.yuTang}', '{sn.tianLao}', '{sn.xuanWu}', '{sn.siMing}', '{sn.gouChen}'],
+      TIAN_SHEN:[
+        '',
+        '{sn.qingLong}',
+        '{sn.mingTang}',
+        '{sn.tianXing}',
+        '{sn.zhuQue}',
+        '{sn.jinKui}',
+        '{sn.tianDe}',
+        '{sn.baiHu}',
+        '{sn.yuTang}',
+        '{sn.tianLao}',
+        '{sn.xuanWu}',
+        '{sn.siMing}',
+        '{sn.gouChen}'
+      ],
       ZHI_TIAN_SHEN_OFFSET: {
         '{dz.zi}': 4,
         '{dz.chou}': 2,
@@ -4179,9 +5168,49 @@
         '{s.huangDao}': '{s.goodLuck}',
         '{s.heiDao}': '{s.badLuck}'
       },
-      PENGZU_GAN:['', '{tg.jia}不开仓财物耗散', '{tg.yi}不栽植千株不长', '{tg.bing}不修灶必见灾殃', '{tg.ding}不剃头头必生疮', '{tg.wu}不受田田主不祥', '{tg.ji}不破券二比并亡', '{tg.geng}不经络织机虚张', '{tg.xin}不合酱主人不尝', '{tg.ren}不泱水更难提防', '{tg.gui}不词讼理弱敌强'],
-      PENGZU_ZHI:['', '{dz.zi}不问卜自惹祸殃', '{dz.chou}不冠带主不还乡', '{dz.yin}不祭祀神鬼不尝', '{dz.mao}不穿井水泉不香', '{dz.chen}不哭泣必主重丧', '{dz.si}不远行财物伏藏', '{dz.wu}不苫盖屋主更张', '{dz.wei}不服药毒气入肠', '{dz.shen}不安床鬼祟入房', '{dz.you}不会客醉坐颠狂', '{dz.xu}不吃犬作怪上床', '{dz.hai}不嫁娶不利新郎'],
-      NUMBER:['{n.zero}', '{n.one}', '{n.two}', '{n.three}', '{n.four}', '{n.five}', '{n.six}', '{n.seven}', '{n.eight}', '{n.nine}', '{n.ten}', '{n.eleven}', '{n.twelve}'],
+      PENGZU_GAN:[
+        '',
+        '{tg.jia}不開倉財物耗散',
+        '{tg.yi}不栽植千株不長',
+        '{tg.bing}不修灶必見災殃',
+        '{tg.ding}不剃頭頭必生瘡',
+        '{tg.wu}不受田田主不祥',
+        '{tg.ji}不破券二比并亡',
+        '{tg.geng}不經絡織機虛張',
+        '{tg.xin}不合醬主人不嚐',
+        '{tg.ren}不泱水更難提防',
+        '{tg.gui}不詞訟理弱敵强'
+      ],
+      PENGZU_ZHI:[
+        '',
+        '{dz.zi}不問卜自惹禍殃',
+        '{dz.chou}不冠带主不還鄉',
+        '{dz.yin}不祭祀神鬼不嚐',
+        '{dz.mao}不穿井水泉不香',
+        '{dz.chen}不哭泣必主重喪',
+        '{dz.si}不遠行財物伏藏',
+        '{dz.wu}不苫蓋屋主更張',
+        '{dz.wei}不服藥毒氣入腸',
+        '{dz.shen}不安床鬼祟入房',
+        '{dz.you}不會客醉坐顛狂',
+        '{dz.xu}不吃犬作怪上床',
+        '{dz.hai}不嫁娶不利新郎'
+      ],
+      NUMBER:[
+        '{n.zero}',
+        '{n.one}',
+        '{n.two}',
+        '{n.three}',
+        '{n.four}',
+        '{n.five}',
+        '{n.six}',
+        '{n.seven}',
+        '{n.eight}',
+        '{n.nine}',
+        '{n.ten}',
+        '{n.eleven}',
+        '{n.twelve}'
+      ],
       MONTH:[
         '',
         '{m.one}',
@@ -4212,7 +5241,21 @@
         '{od.second}{sz.dong}',
         '{od.third}{sz.dong}'
       ],
-      SHENGXIAO:['', '{sx.rat}', '{sx.ox}', '{sx.tiger}', '{sx.rabbit}', '{sx.dragon}', '{sx.snake}', '{sx.horse}', '{sx.goat}', '{sx.monkey}', '{sx.rooster}', '{sx.dog}', '{sx.pig}'],
+      SHENGXIAO:[
+        '',
+        '{sx.rat}',
+        '{sx.ox}',
+        '{sx.tiger}',
+        '{sx.rabbit}',
+        '{sx.dragon}',
+        '{sx.snake}',
+        '{sx.horse}',
+        '{sx.goat}',
+        '{sx.monkey}',
+        '{sx.rooster}',
+        '{sx.dog}',
+        '{sx.pig}'
+      ],
       DAY:[
         '',
         '{d.one}',
@@ -4396,34 +5439,34 @@
         '{xx.zhen}': '{s.goodLuck}'
       },
       XIU_SONG:{
-        '{xx.jiao}': '角星造作主荣昌，外进田财及女郎，嫁娶婚姻出贵子，文人及第见君王，惟有埋葬不可用，三年之后主瘟疫，起工修筑坟基地，堂前立见主人凶。',
-        '{xx.kang}': '亢星造作长房当，十日之中主有殃，田地消磨官失职，接运定是虎狼伤，嫁娶婚姻用此日，儿孙新妇守空房，埋葬若还用此日，当时害祸主重伤。',
-        '{xx.di}': '氐星造作主灾凶，费尽田园仓库空，埋葬不可用此日，悬绳吊颈祸重重，若是婚姻离别散，夜招浪子入房中，行船必定遭沉没，更生聋哑子孙穷。',
-        '{xx.fang}': '房星造作田园进，钱财牛马遍山岗，更招外处田庄宅，荣华富贵福禄康，埋葬若然用此日，高官进职拜君王，嫁娶嫦娥至月殿，三年抱子至朝堂。',
-        '{xx.xin}': '心星造作大为凶，更遭刑讼狱囚中，忤逆官非宅产退，埋葬卒暴死相从，婚姻若是用此日，子死儿亡泪满胸，三年之内连遭祸，事事教君没始终。',
-        '{xx.tail}': '尾星造作主天恩，富贵荣华福禄增，招财进宝兴家宅，和合婚姻贵子孙，埋葬若能依此日，男清女正子孙兴，开门放水招田宅，代代公侯远播名。',
-        '{xx.ji}': '箕星造作主高强，岁岁年年大吉昌，埋葬修坟大吉利，田蚕牛马遍山岗，开门放水招田宅，箧满金银谷满仓，福荫高官加禄位，六亲丰禄乐安康。',
-        '{xx.dou}': '斗星造作主招财，文武官员位鼎台，田宅家财千万进，坟堂修筑贵富来，开门放水招牛马，旺蚕男女主和谐，遇此吉宿来照护，时支福庆永无灾。',
-        '{xx.niu}': '牛星造作主灾危，九横三灾不可推，家宅不安人口退，田蚕不利主人衰，嫁娶婚姻皆自损，金银财谷渐无之，若是开门并放水，牛猪羊马亦伤悲。',
-        '{xx.nv}': '女星造作损婆娘，兄弟相嫌似虎狼，埋葬生灾逢鬼怪，颠邪疾病主瘟惶，为事遭官财失散，泻利留连不可当，开门放水用此日，全家财散主离乡。',
-        '{xx.xu}': '虚星造作主灾殃，男女孤眠不一双，内乱风声无礼节，儿孙媳妇伴人床，开门放水遭灾祸，虎咬蛇伤又卒亡，三三五五连年病，家破人亡不可当。',
-        '{xx.wei}': '危星不可造高楼，自遭刑吊见血光，三年孩子遭水厄，后生出外永不还，埋葬若还逢此日，周年百日取高堂，三年两载一悲伤，开门放水到官堂。',
-        '{xx.shi}': '室星修造进田牛，儿孙代代近王侯，家贵荣华天上至，寿如彭祖八千秋，开门放水招财帛，和合婚姻生贵儿，埋葬若能依此日，门庭兴旺福无休。',
-        '{xx.qiang}': '壁星造作主增财，丝蚕大熟福滔天，奴婢自来人口进，开门放水出英贤，埋葬招财官品进，家中诸事乐陶然，婚姻吉利主贵子，早播名誉著祖鞭。',
-        '{xx.kui}': '奎星造作得祯祥，家内荣和大吉昌，若是埋葬阴卒死，当年定主两三伤，看看军令刑伤到，重重官事主瘟惶，开门放水遭灾祸，三年两次损儿郎。',
-        '{xx.lou}': '娄星修造起门庭，财旺家和事事兴，外进钱财百日进，一家兄弟播高名，婚姻进益生贵子，玉帛金银箱满盈，放水开门皆吉利，男荣女贵寿康宁。',
-        '{xx.vei}': '胃星造作事如何，家贵荣华喜气多，埋葬贵临官禄位，夫妇齐眉永保康，婚姻遇此家富贵，三灾九祸不逢他，从此门前多吉庆，儿孙代代拜金阶。',
-        '{xx.mao}': '昴星造作进田牛，埋葬官灾不得休，重丧二日三人死，尽卖田园不记增，开门放水招灾祸，三岁孩儿白了头，婚姻不可逢此日，死别生离是可愁。',
-        '{xx.bi}': '毕星造作主光前，买得田园有余钱，埋葬此日添官职，田蚕大熟永丰年，开门放水多吉庆，合家人口得安然，婚姻若得逢此日，生得孩儿福寿全。',
-        '{xx.zi}': '觜星造作有徒刑，三年必定主伶丁，埋葬卒死多因此，取定寅年使杀人，三丧不止皆由此，一人药毒二人身，家门田地皆退败，仓库金银化作尘。',
-        '{xx.can}': '参星造作旺人家，文星照耀大光华，只因造作田财旺，埋葬招疾哭黄沙，开门放水加官职，房房子孙见田加，婚姻许遁遭刑克，男女朝开幕落花。',
-        '{xx.jing}': '井星造作旺蚕田，金榜题名第一光，埋葬须防惊卒死，狂颠风疾入黄泉，开门放水招财帛，牛马猪羊旺莫言，贵人田塘来入宅，儿孙兴旺有余钱。',
-        '{xx.gui}': '鬼星起造卒人亡，堂前不见主人郎，埋葬此日官禄至，儿孙代代近君王，开门放水须伤死，嫁娶夫妻不久长，修土筑墙伤产女，手扶双女泪汪汪。',
-        '{xx.liu}': '柳星造作主遭官，昼夜偷闭不暂安，埋葬瘟惶多疾病，田园退尽守冬寒，开门放水遭聋瞎，腰驼背曲似弓弯，更有棒刑宜谨慎，妇人随客走盘桓。',
-        '{xx.xing}': '星宿日好造新房，进职加官近帝王，不可埋葬并放水，凶星临位女人亡，生离死别无心恋，要自归休别嫁郎，孔子九曲殊难度，放水开门天命伤。',
-        '{xx.zhang}': '张星日好造龙轩，年年并见进庄田，埋葬不久升官职，代代为官近帝前，开门放水招财帛，婚姻和合福绵绵，田蚕人满仓库满，百般顺意自安然。',
-        '{xx.yi}': '翼星不利架高堂，三年二载见瘟惶，埋葬若还逢此日，子孙必定走他乡，婚姻此日不宜利，归家定是不相当，开门放水家须破，少女恋花贪外郎。',
-        '{xx.zhen}': '轸星临水造龙宫，代代为官受皇封，富贵荣华增寿禄，库满仓盈自昌隆，埋葬文昌来照助，宅舍安宁不见凶，更有为官沾帝宠，婚姻龙子入龙宫。'
+        '{xx.jiao}': '角星造作主榮昌，外進田財及女郎，嫁娶婚姻出貴子，文人及第見君王，惟有埋葬不可用，三年之后主瘟疫，起工修筑墳基地，堂前立見主人凶。',
+        '{xx.kang}': '亢星造作長房當，十日之中主有殃，田地消磨官失職，接運定是虎狼傷，嫁娶婚姻用此日，兒孫新婦守空房，埋葬若還用此日，當時害禍主重傷。',
+        '{xx.di}': '氐星造作主災凶，費盡田園倉庫空，埋葬不可用此日，懸繩吊頸禍重重，若是婚姻離别散，夜招浪子入房中，行船必定遭沉没，更生聾啞子孫窮。',
+        '{xx.fang}': '房星造作田園進，錢財牛馬遍山崗，更招外處田庄宅，榮華富貴福禄康，埋葬若然用此日，高官進職拜君王，嫁娶嫦娥至月殿，三年抱子至朝堂。',
+        '{xx.xin}': '心星造作大為凶，更遭刑訟獄囚中，忤逆官非宅產退，埋葬卒暴死相從，婚姻若是用此日，子死兒亡泪满胸，三年之内連遭禍，事事教君没始终。',
+        '{xx.tail}': '尾星造作主天恩，富貴榮華福禄增，招財進寶興家宅，和合婚姻貴子孫，埋葬若能依此日，男清女正子孫興，開門放水招田宅，代代公侯遠播名。',
+        '{xx.ji}': '箕星造作主高强，歲歲年年大吉昌，埋葬修墳大吉利，田蠶牛馬遍山崗，開門放水招田宅，箧满金銀穀满倉，福蔭高官加禄位，六親豐禄樂安康。',
+        '{xx.dou}': '斗星造作主招財，文武官員位鼎台，田宅家財千萬進，墳堂修筑貴富來，開門放水招牛馬，旺蠶男女主和諧，遇此吉宿來照護，時支福慶永無災。',
+        '{xx.niu}': '牛星造作主災危，九横三災不可推，家宅不安人口退，田蠶不利主人衰，嫁娶婚姻皆自損，金銀財穀漸無之，若是開門并放水，牛猪羊馬亦傷悲。',
+        '{xx.nv}': '女星造作損婆娘，兄弟相嫌似虎狼，埋葬生災逢鬼怪，顛邪疾病主瘟惶，為事遭官財失散，瀉利留連不可當，開門放水用此日，全家財散主離鄉。',
+        '{xx.xu}': '虛星造作主災殃，男女孤眠不一双，内亂風聲無禮節，兒孫媳婦伴人床，開門放水遭災禍，虎咬蛇傷又卒亡，三三五五連年病，家破人亡不可當。',
+        '{xx.wei}': '危星不可造高樓，自遭刑吊見血光，三年孩子遭水厄，后生出外永不還，埋葬若還逢此日，週年百日取高堂，三年两載一悲傷，開門放水到官堂。',
+        '{xx.shi}': '室星修造進田牛，兒孫代代近王侯，家貴榮華天上至，壽如彭祖八千秋，開門放水招財帛，和合婚姻生貴兒，埋葬若能依此日，門庭興旺福無休。',
+        '{xx.qiang}': '壁星造作主增財，絲蠶大熟福滔天，奴婢自來人口進，開門放水出英賢，埋葬招財官品進，家中諸事樂陶然，婚姻吉利主貴子，早播名譽著祖鞭。',
+        '{xx.kui}': '奎星造作得禎祥，家内榮和大吉昌，若是埋葬陰卒死，當年定主两三傷，看看軍令刑傷到，重重官事主瘟惶，開門放水遭災禍，三年两次損兒郎。',
+        '{xx.lou}': '婁星修造起門庭，財旺家和事事興，外進錢財百日進，一家兄弟播高名，婚姻進益生貴子，玉帛金銀箱满盈，放水開門皆吉利，男榮女貴壽康寧。',
+        '{xx.vei}': '胃星造作事如何，家貴榮華喜氣多，埋葬貴臨官禄位，夫婦齊眉永保康，婚姻遇此家富貴，三災九禍不逢他，從此門前多吉慶，兒孫代代拜金階。',
+        '{xx.mao}': '昴星造作進田牛，埋葬官災不得休，重喪二日三人死，盡賣田園不記增，開門放水招災禍，三歲孩兒白了頭，婚姻不可逢此日，死别生離是可愁。',
+        '{xx.bi}': '畢星造作主光前，買得田園有余錢，埋葬此日添官職，田蠶大熟永豐年，開門放水多吉慶，合家人口得安然，婚姻若得逢此日，生得孩兒福壽全。',
+        '{xx.zi}': '觜星造作有徒刑，三年必定主伶丁，埋葬卒死多因此，取定寅年使殺人，三喪不止皆由此，一人藥毒二人身，家門田地皆退敗，倉庫金銀化作塵。',
+        '{xx.can}': '参星造作旺人家，文星照耀大光華，只因造作田財旺，埋葬招疾哭黄沙，開門放水加官職，房房子孫見田加，婚姻許遁遭刑剋，男女朝開幕落花。',
+        '{xx.jing}': '井星造作旺蠶田，金榜题名第一光，埋葬須防驚卒死，狂顛風疾入黄泉，開門放水招財帛，牛馬猪羊旺莫言，貴人田塘來入宅，兒孫興旺有余錢。',
+        '{xx.gui}': '鬼星起造卒人亡，堂前不見主人郎，埋葬此日官禄至，兒孫代代近君王，開門放水須傷死，嫁娶夫妻不久長，修土筑墙傷產女，手扶双女泪汪汪。',
+        '{xx.liu}': '柳星造作主遭官，昼夜偷閉不暂安，埋葬瘟惶多疾病，田園退盡守冬寒，開門放水遭聾瞎，腰駝背曲似弓彎，更有棒刑宜謹慎，婦人随客走盤桓。',
+        '{xx.xing}': '星宿日好造新房，進職加官近帝王，不可埋葬并放水，凶星臨位女人亡，生離死别無心戀，要自歸休别嫁郎，孔子九曲殊難度，放水開門天命傷。',
+        '{xx.zhang}': '張星日好造龍軒，年年并見進庄田，埋葬不久升官職，代代為官近帝前，開門放水招財帛，婚姻和合福綿綿，田蠶人满倉庫满，百般順意自安然。',
+        '{xx.yi}': '翼星不利架高堂，三年二載見瘟惶，埋葬若還逢此日，子孫必定走他鄉，婚姻此日不宜利，歸家定是不相當，開門放水家須破，少女戀花貪外郎。',
+        '{xx.zhen}': '軫星臨水造龍宫，代代為官受皇封，富貴榮華增壽禄，庫满倉盈自昌隆，埋葬文昌來照助，宅舍安寧不見凶，更有為官沾帝寵，婚姻龍子入龍宫。'
       },
       ZHENG:{
         '{xx.jiao}': '{wx.mu}',
@@ -4531,13 +5574,90 @@
         '9-9':'{jr.chongYang}',
         '12-8':'{jr.laBa}'
       },
-      OTHER_FESTIVAL:{'1-4':['接神日'],'1-5':['隔开日'],'1-7':['人日'],'1-8':['谷日','顺星节'],'1-9':['天日'],'1-10':['地日'],'1-20':['天穿节'],'1-25':['填仓节'],'1-30':['正月晦'],'2-1':['中和节'],'2-2':['社日节'],'3-3':['上巳节'],'5-20':['分龙节'],'5-25':['会龙节'],'6-6':['天贶节'],'6-24':['观莲节'],'6-25':['五谷母节'],'7-15':['中元节'],'7-22':['财神节'],'7-29':['地藏节'],'8-1':['天灸日'],'10-1':['寒衣节'],'10-10':['十成节'],'10-15':['下元节'],'12-7':['驱傩日'],'12-16':['尾牙'],'12-24':['祭灶日']},
-      CHONG:['{dz.wu}', '{dz.wei}', '{dz.shen}', '{dz.you}', '{dz.xu}', '{dz.hai}', '{dz.zi}', '{dz.chou}', '{dz.yin}', '{dz.mao}', '{dz.chen}', '{dz.si}'],
-      CHONG_GAN:['{tg.wu}', '{tg.ji}', '{tg.geng}', '{tg.xin}', '{tg.ren}', '{tg.gui}', '{tg.jia}', '{tg.yi}', '{tg.bing}', '{tg.ding}'],
-      CHONG_GAN_TIE:['{tg.ji}', '{tg.wu}', '{tg.xin}', '{tg.geng}', '{tg.gui}', '{tg.ren}', '{tg.yi}', '{tg.jia}', '{tg.ding}', '{tg.bing}'],
-      CHONG_GAN_4:['{tg.geng}', '{tg.xin}', '{tg.ren}', '{tg.gui}', '', '', '{tg.jia}', '{tg.yi}', '{tg.bing}', '{tg.ding}'],
-      HE_GAN_5:['{tg.ji}', '{tg.geng}', '{tg.xin}', '{tg.ren}', '{tg.gui}', '{tg.jia}', '{tg.yi}', '{tg.bing}', '{tg.ding}', '{tg.wu}'],
-      HE_ZHI_6:['{dz.chou}', '{dz.zi}', '{dz.hai}', '{dz.xu}', '{dz.you}', '{dz.shen}', '{dz.wei}', '{dz.wu}', '{dz.si}', '{dz.chen}', '{dz.mao}', '{dz.yin}'],
+      OTHER_FESTIVAL:{
+        '1-15':['上元日'],
+        '7-15':['中元節'],
+        '7-22':['財神節'],
+        '7-29':['地藏節'],
+        '10-15':['下元節'],
+        '12-24':['祭灶日']
+      },
+      CHONG:[
+        '{dz.wu}',
+        '{dz.wei}',
+        '{dz.shen}',
+        '{dz.you}',
+        '{dz.xu}',
+        '{dz.hai}',
+        '{dz.zi}',
+        '{dz.chou}',
+        '{dz.yin}',
+        '{dz.mao}',
+        '{dz.chen}',
+        '{dz.si}'
+      ],
+      CHONG_GAN:[
+        '{tg.wu}',
+        '{tg.ji}',
+        '{tg.geng}',
+        '{tg.xin}',
+        '{tg.ren}',
+        '{tg.gui}',
+        '{tg.jia}',
+        '{tg.yi}',
+        '{tg.bing}',
+        '{tg.ding}'
+      ],
+      CHONG_GAN_TIE:[
+        '{tg.ji}',
+        '{tg.wu}',
+        '{tg.xin}',
+        '{tg.geng}',
+        '{tg.gui}',
+        '{tg.ren}',
+        '{tg.yi}',
+        '{tg.jia}',
+        '{tg.ding}',
+        '{tg.bing}'
+      ],
+      CHONG_GAN_4:[
+        '{tg.geng}',
+        '{tg.xin}',
+        '{tg.ren}',
+        '{tg.gui}',
+        '',
+        '',
+        '{tg.jia}',
+        '{tg.yi}',
+        '{tg.bing}',
+        '{tg.ding}'
+      ],
+      HE_GAN_5:[
+        '{tg.ji}',
+        '{tg.geng}',
+        '{tg.xin}',
+        '{tg.ren}',
+        '{tg.gui}',
+        '{tg.jia}',
+        '{tg.yi}',
+        '{tg.bing}',
+        '{tg.ding}',
+        '{tg.wu}'
+      ],
+      HE_ZHI_6:[
+        '{dz.chou}',
+        '{dz.zi}',
+        '{dz.hai}',
+        '{dz.xu}',
+        '{dz.you}',
+        '{dz.shen}',
+        '{dz.wei}',
+        '{dz.wu}',
+        '{dz.si}',
+        '{dz.chen}',
+        '{dz.mao}',
+        '{dz.yin}'
+      ],
       SHA:{
         '{dz.zi}':'{ps.nan}',
         '{dz.chou}':'{ps.dong}',
@@ -5476,7 +6596,7 @@
           this._p.target = _ymd(v);
         },
         toString:function(){
-          return this._p.day+' '+this._p.name+(this._p.work?'调休':'')+' '+this._p.target;
+          return this._p.day+' '+this._p.name+(this._p.work?'調休':'')+' '+this._p.target;
         }
       };
     };
@@ -5649,8 +6769,9 @@
       getHolidaysByTarget:function(){return _getHolidaysByTarget(arguments);},
       fix:function(){_fix(arguments);}
     };
-  })(['元旦节','春节','清明节','劳动节','端午节','中秋节','国庆节','国庆中秋','抗战胜利日']);
+  })(['元旦','春節','清明節','勞動節','端午節','中秋節','國慶']);
   var NineStar = (function(){
+    // 飛星用
     var _fromIndex=function(index){
       return {
         _p:{index:index},
@@ -5685,14 +6806,14 @@
           s += this.getNameInXuanKong();
           s += ' ';
           s += this.getLuckInXuanKong();
-          s += '] 奇门[';
+          s += '] 奇門[';
           s += this.getNameInQiMen();
           s += ' ';
           s += this.getLuckInQiMen();
           if(this.getBaMenInQiMen().length>0) {
             s += ' ';
             s += this.getBaMenInQiMen();
-            s += '门';
+            s += '門';
           }
           s += ' ';
           s += this.getYinYangInQiMen();
@@ -5706,18 +6827,19 @@
       };
     };
     return {
-      NAME_BEI_DOU:['天枢','天璇','天玑','天权','玉衡','开阳','摇光','洞明','隐元'],
-      NAME_XUAN_KONG:['贪狼','巨门','禄存','文曲','廉贞','武曲','破军','左辅','右弼'],
-      NAME_QI_MEN:['天蓬','天芮','天冲','天辅','天禽','天心','天柱','天任','天英'],
-      BA_MEN_QI_MEN:['休','死','伤','杜','','开','惊','生','景'],
-      NAME_TAI_YI:['太乙','摄提','轩辕','招摇','天符','青龙','咸池','太阴','天乙'],
+      NAME_BEI_DOU:['天樞','天璇','天璣','天權','玉衡','開陽','摇光','洞明','隱元'],
+      NAME_XUAN_KONG:['貪狼','巨門','禄存','文曲','廉貞','武曲','破軍','左輔','右弼'],
+      NAME_QI_MEN:['天蓬','天芮','天沖','天輔','天禽','天心','天柱','天任','天英'],
+      BA_MEN_QI_MEN:['休','死','傷','杜','','開','驚','生','景'],
+      NAME_TAI_YI:['太乙','攝提','軒辕','招摇','天符','青龍','咸池','太陰','天乙'],
       TYPE_TAI_YI:['吉神','凶神','安神','安神','凶神','吉神','凶神','吉神','吉神'],
-      SONG_TAI_YI:['门中太乙明，星官号贪狼，赌彩财喜旺，婚姻大吉昌，出入无阻挡，参谒见贤良，此行三五里，黑衣别阴阳。','门前见摄提，百事必忧疑，相生犹自可，相克祸必临，死门并相会，老妇哭悲啼，求谋并吉事，尽皆不相宜，只可藏隐遁，若动伤身疾。','出入会轩辕，凡事必缠牵，相生全不美，相克更忧煎，远行多不利，博彩尽输钱，九天玄女法，句句不虚言。','招摇号木星，当之事莫行，相克行人阻，阴人口舌迎，梦寐多惊惧，屋响斧自鸣，阴阳消息理，万法弗违情。','五鬼为天符，当门阴女谋，相克无好事，行路阻中途，走失难寻觅，道逢有尼姑，此星当门值，万事有灾除。','神光跃青龙，财气喜重重，投入有酒食，赌彩最兴隆，更逢相生旺，休言克破凶，见贵安营寨，万事总吉同。','吾将为咸池，当之尽不宜，出入多不利，相克有灾情，赌彩全输尽，求财空手回，仙人真妙语，愚人莫与知，动用虚惊退，反复逆风吹。','坐临太阴星，百祸不相侵，求谋悉成就，知交有觅寻，回风归来路，恐有殃伏起，密语中记取，慎乎莫轻行。','迎来天乙星，相逢百事兴，运用和合庆，茶酒喜相迎，求谋并嫁娶，好合有天成，祸福如神验，吉凶甚分明。'],
+      SONG_TAI_YI:['門中太乙明，星官號貪狼，賭彩財喜旺，婚姻大吉昌，出入無阻擋，参謁見賢良，此行三五里，黑衣别陰陽。','門前見攝提，百事必憂疑，相生猶自可，相剋禍必臨，死門并相會，老婦哭悲啼，求謀并吉事，盡皆不相宜，只可藏隱遁，若動傷身疾。','出入會軒辕，凡事必纏牽，相生全不美，相剋更憂煎，遠行多不利，博彩盡輸錢，九天玄女法，句句不虛言。','招摇號木星，當之事莫行，相剋行人阻，陰人口舌迎，夢寐多驚惧，屋響斧自鳴，陰陽消息理，萬法弗違情。','五鬼為天符，當門陰女謀，相剋無好事，行路阻中途，走失難尋覓，道逢有尼姑，此星當門值，萬事有災除。','神光躍青龍，財氣喜重重，投入有酒食，賭彩最興隆，更逢相生旺，休言剋破凶，見貴安營寨，萬事總吉同。','吾將為咸池，當之盡不宜，出入多不利，相剋有災情，賭彩全輸盡，求財空手回，仙人真妙語，愚人莫與知，動用虛驚退，反復逆風吹。','坐臨太陰星，百禍不相侵，求謀悉成就，知交有覓尋，回風歸來路，恐有殃伏起，密語中記取，慎乎莫輕行。','迎來天乙星，相逢百事興，運用和合慶，茶酒喜相迎，求謀并嫁娶，好合有天成，禍福如神驗，吉凶甚分明。'],
       LUCK_QI_MEN:['大凶','大凶','小吉','大吉','大吉','大吉','小凶','小吉','小凶'],
       fromIndex:function(index){return _fromIndex(index);}
     };
   })();
   var EightChar = (function(){
+    // 八字用
     var _fromLunar=function(lunar){
       return {
         _p:{sect:2,lunar:lunar},
@@ -5918,9 +7040,9 @@
             } else {
               var endTimeZhiIndex = (end.getHour() === 23) ? 11 : LunarUtil.getTimeZhiIndex(end.toYmdHms().substr(11, 5));
               var startTimeZhiIndex = (start.getHour() === 23) ? 11 : LunarUtil.getTimeZhiIndex(start.toYmdHms().substr(11, 5));
-              // 时辰差
+              // 時辰差
               var hourDiff = endTimeZhiIndex - startTimeZhiIndex;
-              // 天数差
+              // 天數差
               var dayDiff = end.subtract(start);
               if (hourDiff < 0) {
                 hourDiff += 12;
@@ -6146,6 +7268,7 @@
     };
   })();
   var LunarTime = (function(){
+    // 農曆
     var _fromYmdHms=function(lunarYear,lunarMonth,lunarDay,hour,minute,second){
       var lunar=Lunar.fromYmdHms(lunarYear,lunarMonth,lunarDay,hour,minute,second);
       var zhiIndex=LunarUtil.getTimeZhiIndex([(hour<10?'0':'')+hour,(minute<10?'0':'')+minute].join(':'));
@@ -6269,20 +7392,20 @@
     var _getXiu=function(m,d){
       return FotoUtil.XIU_27[(XIU_OFFSET[Math.abs(m)-1] + d - 1) % FotoUtil.XIU_27.length];
     };
-    var dj='犯者夺纪';
-    var js='犯者减寿';
-    var ss='犯者损寿';
-    var xl='犯者削禄夺纪';
-    var jw='犯者三年内夫妇俱亡';
-    var _y=_f('杨公忌');
+    var dj='犯者奪紀';
+    var js='犯者減壽';
+    var ss='犯者損壽';
+    var xl='犯者削禄奪紀';
+    var jw='犯者三年内夫婦俱亡';
+    var _y=_f('楊公忌');
     var _t=_f('四天王巡行', '', true);
     var _d=_f('斗降', dj, true);
     var _s=_f('月朔', dj, true);
     var _w=_f('月望', dj, true);
     var _h=_f('月晦', js, true);
-    var _l=_f('雷斋日', js, true);
-    var _j=_f('九毒日', '犯者夭亡，奇祸不测');
-    var _r=_f('人神在阴', '犯者得病', true, '宜先一日即戒');
+    var _l=_f('雷齋日', js, true);
+    var _j=_f('九毒日', '犯者夭亡，奇禍不測');
+    var _r=_f('人神在陰', '犯者得病', true, '宜先一日即戒');
     var _m=_f('司命奏事', js, true, '如月小，即戒廿九');
     var _hh=_f('月晦', js, true, '如月小，即戒廿九');
     return {
@@ -6317,92 +7440,92 @@
       ],
       DAY_ZHAI_GUAN_YIN:['1-8','2-7','2-9','2-19','3-3','3-6','3-13','4-22','5-3','5-17','6-16','6-18','6-19','6-23','7-13','8-16','9-19','9-23','10-2','11-19','11-24','12-25'],
       FESTIVAL:{
-        '1-1': [_f('天腊，玉帝校世人神气禄命', xl), _s],
-        '1-3': [_f('万神都会', dj), _d],
-        '1-5': [_f('五虚忌')],
+        '1-1': [_f('天臘，玉帝校世人神氣禄命', xl), _s],
+        '1-3': [_f('萬神都會', dj), _d],
+        '1-5': [_f('五虛忌')],
         '1-6': [_f('六耗忌'), _l],
-        '1-7': [_f('上会日', ss)],
-        '1-8': [_f('五殿阎罗天子诞', dj), _t],
-        '1-9': [_f('玉皇上帝诞', dj)],
+        '1-7': [_f('上會日', ss)],
+        '1-8': [_f('五殿閻羅天子誕', dj), _t],
+        '1-9': [_f('玉皇上帝誕', dj)],
         '1-13': [_y],
         '1-14': [_f('三元降', js), _t],
-        '1-15': [_f('三元降', js), _f('上元神会', dj), _w, _t],
+        '1-15': [_f('三元降', js), _f('上元神會', dj), _w, _t],
         '1-16': [_f('三元降', js)],
-        '1-19': [_f('长春真人诞')],
+        '1-19': [_f('長春真人誕')],
         '1-23': [_f('三尸神奏事'), _t],
-        '1-25': [_h, _f('天地仓开日', '犯者损寿，子带疾')],
+        '1-25': [_h, _f('天地倉開日', '犯者損壽，子带疾')],
         '1-27': [_d],
         '1-28': [_r],
         '1-29': [_t],
         '1-30': [_hh, _m, _t],
-        '2-1': [_f('一殿秦广王诞', dj), _s],
-        '2-2': [_f('万神都会', dj), _f('福德土地正神诞', '犯者得祸')],
-        '2-3': [_f('文昌帝君诞', xl), _d],
-        '2-6': [_f('东华帝君诞'), _l],
-        '2-8': [_f('释迦牟尼佛出家', dj), _f('三殿宋帝王诞', dj), _f('张大帝诞', dj), _t],
+        '2-1': [_f('一殿秦廣王誕', dj), _s],
+        '2-2': [_f('萬神都會', dj), _f('福德土地正神誕', '犯者得禍')],
+        '2-3': [_f('文昌帝君誕', xl), _d],
+        '2-6': [_f('東華帝君誕'), _l],
+        '2-8': [_f('釋迦牟尼佛出家', dj), _f('三殿宋帝王誕', dj), _f('張大帝誕', dj), _t],
         '2-11': [_y],
         '2-14': [_t],
-        '2-15': [_f('释迦牟尼佛涅槃', xl), _f('太上老君诞', xl), _f('月望', xl, true), _t],
-        '2-17': [_f('东方杜将军诞')],
-        '2-18': [_f('四殿五官王诞', xl), _f('至圣先师孔子讳辰', xl)],
-        '2-19': [_f('观音大士诞', dj)],
-        '2-21': [_f('普贤菩萨诞')],
+        '2-15': [_f('釋迦牟尼佛涅槃', xl), _f('太上老君誕', xl), _f('月望', xl, true), _t],
+        '2-17': [_f('東方杜將軍誕')],
+        '2-18': [_f('四殿五官王誕', xl), _f('至聖先師孔子諱辰', xl)],
+        '2-19': [_f('觀音大士誕', dj)],
+        '2-21': [_f('普賢菩薩誕')],
         '2-23': [_t],
         '2-25': [_h],
         '2-27': [_d],
         '2-28': [_r],
         '2-29': [_t],
         '2-30': [_hh, _m, _t],
-        '3-1': [_f('二殿楚江王诞', dj), _s],
-        '3-3': [_f('玄天上帝诞', dj), _d],
+        '3-1': [_f('二殿楚江王誕', dj), _s],
+        '3-3': [_f('玄天上帝誕', dj), _d],
         '3-6': [_l],
-        '3-8': [_f('六殿卞城王诞', dj), _t],
-        '3-9': [_f('牛鬼神出', '犯者产恶胎'), _y],
-        '3-12': [_f('中央五道诞')],
+        '3-8': [_f('六殿卞城王誕', dj), _t],
+        '3-9': [_f('牛鬼神出', '犯者產惡胎'), _y],
+        '3-12': [_f('中央五道誕')],
         '3-14': [_t],
-        '3-15': [_f('昊天上帝诞', dj), _f('玄坛诞', dj), _w, _t],
-        '3-16': [_f('准提菩萨诞', dj)],
-        '3-19': [_f('中岳大帝诞'), _f('后土娘娘诞'), _f('三茅降')],
-        '3-20': [_f('天地仓开日', ss), _f('子孙娘娘诞')],
+        '3-15': [_f('昊天上帝誕', dj), _f('玄壇誕', dj), _w, _t],
+        '3-16': [_f('準提菩薩誕', dj)],
+        '3-19': [_f('中岳大帝誕'), _f('后土娘娘誕'), _f('三茅降')],
+        '3-20': [_f('天地倉開日', ss), _f('子孫娘娘誕')],
         '3-23': [_t],
         '3-25': [_h],
-        '3-27': [_f('七殿泰山王诞'), _d],
-        '3-28': [_r, _f('苍颉至圣先师诞', xl), _f('东岳大帝诞')],
+        '3-27': [_f('七殿泰山王誕'), _d],
+        '3-28': [_r, _f('倉頡至聖先師誕', xl), _f('東岳大帝誕')],
         '3-29': [_t],
         '3-30': [_hh, _m, _t],
-        '4-1': [_f('八殿都市王诞', dj), _s],
+        '4-1': [_f('八殿都市王誕', dj), _s],
         '4-3': [_d],
-        '4-4': [_f('万神善会', '犯者失瘼夭胎'), _f('文殊菩萨诞')],
+        '4-4': [_f('萬神善會', '犯者失瘼夭胎'), _f('文殊菩薩誕')],
         '4-6': [_l],
         '4-7': [_f('南斗、北斗、西斗同降', js), _y],
-        '4-8': [_f('释迦牟尼佛诞', dj), _f('万神善会', '犯者失瘼夭胎'), _f('善恶童子降', '犯者血死'), _f('九殿平等王诞'), _t],
-        '4-14': [_f('纯阳祖师诞', js), _t],
-        '4-15': [_w, _f('钟离祖师诞'),  _t],
-        '4-16': [_f('天地仓开日', ss)],
-        '4-17': [_f('十殿转轮王诞', dj)],
-        '4-18': [_f('天地仓开日', ss), _f('紫徽大帝诞', ss)],
-        '4-20': [_f('眼光圣母诞')],
+        '4-8': [_f('釋迦牟尼佛誕', dj), _f('萬神善會', '犯者失瘼夭胎'), _f('善惡童子降', '犯者血死'), _f('九殿平等王誕'), _t],
+        '4-14': [_f('純陽祖師誕', js), _t],
+        '4-15': [_w, _f('鍾離祖師誕'),  _t],
+        '4-16': [_f('天地倉開日', ss)],
+        '4-17': [_f('十殿轉輪王誕', dj)],
+        '4-18': [_f('天地倉開日', ss), _f('紫徽大帝誕', ss)],
+        '4-20': [_f('眼光聖母誕')],
         '4-23': [_t],
         '4-25': [_h],
         '4-27': [_d],
         '4-28': [_r],
         '4-29': [_t],
         '4-30': [_hh, _m, _t],
-        '5-1': [_f('南极长生大帝诞', dj), _s],
+        '5-1': [_f('南極長生大帝誕', dj), _s],
         '5-3': [_d],
-        '5-5': [_f('地腊', xl), _f('五帝校定生人官爵', xl), _j, _y],
+        '5-5': [_f('地臘', xl), _f('五帝校定生人官爵', xl), _j, _y],
         '5-6': [_j, _l],
         '5-7': [_j],
-        '5-8': [_f('南方五道诞'), _t],
-        '5-11': [_f('天地仓开日', ss),_f('天下都城隍诞')],
-        '5-12': [_f('炳灵公诞')],
-        '5-13': [_f('关圣降', xl)],
-        '5-14': [_f('夜子时为天地交泰', jw), _t],
+        '5-8': [_f('南方五道誕'), _t],
+        '5-11': [_f('天地倉開日', ss),_f('天下都城隍誕')],
+        '5-12': [_f('炳靈公誕')],
+        '5-13': [_f('關聖降', xl)],
+        '5-14': [_f('夜子時為天地交泰', jw), _t],
         '5-15': [_w, _j, _t],
-        '5-16': [_f('九毒日', jw), _f('天地元气造化万物之辰', jw)],
+        '5-16': [_f('九毒日', jw), _f('天地元氣造化萬物之辰', jw)],
         '5-17': [_j],
-        '5-18': [_f('张天师诞')],
-        '5-22': [_f('孝娥神诞', dj)],
+        '5-18': [_f('張天師誕')],
+        '5-22': [_f('孝娥神誕', dj)],
         '5-23': [_t],
         '5-25': [_j, _h],
         '5-26': [_j],
@@ -6411,16 +7534,16 @@
         '5-29': [_t],
         '5-30': [_hh, _m, _t],
         '6-1': [_s],
-        '6-3': [_f('韦驮菩萨圣诞'), _d, _y],
-        '6-5': [_f('南赡部洲转大轮', ss)],
-        '6-6': [_f('天地仓开日', ss), _l],
+        '6-3': [_f('韋馱菩薩聖誕'), _d, _y],
+        '6-5': [_f('南贍部洲轉大輪', ss)],
+        '6-6': [_f('天地倉開日', ss), _l],
         '6-8': [_t],
-        '6-10': [_f('金粟如来诞')],
+        '6-10': [_f('金粟如來誕')],
         '6-14': [_t],
         '6-15': [_w, _t],
-        '6-19': [_f('观世音菩萨成道', dj)],
-        '6-23': [_f('南方火神诞', '犯者遭回禄'), _t],
-        '6-24': [_f('雷祖诞', xl), _f('关帝诞', xl)],
+        '6-19': [_f('觀世音菩薩成道', dj)],
+        '6-23': [_f('南方火神誕', '犯者遭回禄'), _t],
+        '6-24': [_f('雷祖誕', xl), _f('關帝誕', xl)],
         '6-25': [_h],
         '6-27': [_d],
         '6-28': [_r],
@@ -6428,64 +7551,64 @@
         '6-30': [_hh, _m, _t],
         '7-1': [_s, _y],
         '7-3': [_d],
-        '7-5': [_f('中会日', ss, false, '一作初七')],
+        '7-5': [_f('中會日', ss, false, '一作初七')],
         '7-6': [_l],
-        '7-7': [_f('道德腊', xl), _f('五帝校生人善恶', xl), _f('魁星诞', xl)],
+        '7-7': [_f('道德臘', xl), _f('五帝校生人善惡', xl), _f('魁星誕', xl)],
         '7-8': [_t],
-        '7-10': [_f('阴毒日', '', false, '大忌')],
-        '7-12': [_f('长真谭真人诞')],
-        '7-13': [_f('大势至菩萨诞', js)],
+        '7-10': [_f('陰毒日', '', false, '大忌')],
+        '7-12': [_f('長真譚真人誕')],
+        '7-13': [_f('大勢至菩薩誕', js)],
         '7-14': [_f('三元降', js), _t],
         '7-15': [_w, _f('三元降', dj),_f('地官校籍', dj), _t],
         '7-16': [_f('三元降', js)],
-        '7-18': [_f('西王母诞', dj)],
-        '7-19': [_f('太岁诞', dj)],
-        '7-22': [_f('增福财神诞', xl)],
+        '7-18': [_f('西王母誕', dj)],
+        '7-19': [_f('太歲誕', dj)],
+        '7-22': [_f('增福財神誕', xl)],
         '7-23': [_t],
         '7-25': [_h],
         '7-27': [_d],
         '7-28': [_r],
         '7-29': [_y, _t],
-        '7-30': [_f('地藏菩萨诞', dj), _hh, _m, _t],
-        '8-1': [_s, _f('许真君诞')],
-        '8-3': [_d, _f('北斗诞', xl), _f('司命灶君诞', '犯者遭回禄')],
-        '8-5': [_f('雷声大帝诞', dj)],
+        '7-30': [_f('地藏菩薩誕', dj), _hh, _m, _t],
+        '8-1': [_s, _f('許真君誕')],
+        '8-3': [_d, _f('北斗誕', xl), _f('司命灶君誕', '犯者遭回禄')],
+        '8-5': [_f('雷聲大帝誕', dj)],
         '8-6': [_l],
         '8-8': [_t],
-        '8-10': [_f('北斗大帝诞')],
-        '8-12': [_f('西方五道诞')],
+        '8-10': [_f('北斗大帝誕')],
+        '8-12': [_f('西方五道誕')],
         '8-14': [_t],
         '8-15': [_w, _f('太明朝元', '犯者暴亡', false, '宜焚香守夜'), _t],
-        '8-16': [_f('天曹掠刷真君降', '犯者贫夭')],
-        '8-18': [_f('天人兴福之辰', '', false, '宜斋戒，存想吉事')],
-        '8-23': [_f('汉恒候张显王诞'), _t],
-        '8-24': [_f('灶君夫人诞')],
+        '8-16': [_f('天曹掠刷真君降', '犯者貧夭')],
+        '8-18': [_f('天人興福之辰', '', false, '宜齋戒，存想吉事')],
+        '8-23': [_f('漢恒候張顯王誕'), _t],
+        '8-24': [_f('灶君夫人誕')],
         '8-25': [_h],
-        '8-27': [_d, _f('至圣先师孔子诞', xl), _y],
-        '8-28': [_r, _f('四天会事')],
+        '8-27': [_d, _f('至聖先師孔子誕', xl), _y],
+        '8-28': [_r, _f('四天會事')],
         '8-29': [_t],
-        '8-30': [_f('诸神考校', '犯者夺算'), _hh, _m, _t],
-        '9-1': [_s, _f('南斗诞', xl), _f('北斗九星降世', dj, false, '此九日俱宜斋戒')],
-        '9-3': [_d, _f('五瘟神诞')],
+        '8-30': [_f('諸神考校', '犯者奪算'), _hh, _m, _t],
+        '9-1': [_s, _f('南斗誕', xl), _f('北斗九星降世', dj, false, '此九日俱宜齋戒')],
+        '9-3': [_d, _f('五瘟神誕')],
         '9-6': [_l],
         '9-8': [_t],
-        '9-9': [_f('斗母诞', xl), _f('酆都大帝诞'), _f('玄天上帝飞升')],
+        '9-9': [_f('斗母誕', xl), _f('酆都大帝誕'), _f('玄天上帝飛升')],
         '9-10': [_f('斗母降', dj)],
         '9-11': [_f('宜戒')],
-        '9-13': [_f('孟婆尊神诞')],
+        '9-13': [_f('孟婆尊神誕')],
         '9-14': [_t],
         '9-15': [_w, _t],
-        '9-17': [_f('金龙四大王诞', '犯者遭水厄')],
-        '9-19': [_f('日宫月宫会合', js), _f('观世音菩萨诞', js)],
+        '9-17': [_f('金龍四大王誕', '犯者遭水厄')],
+        '9-19': [_f('日宫月宫會合', js), _f('觀世音菩薩誕', js)],
         '9-23': [_t],
         '9-25': [_h, _y],
         '9-27': [_d],
         '9-28': [_r],
         '9-29': [_t],
-        '9-30': [_f('药师琉璃光佛诞', '犯者危疾'), _hh, _m, _t],
-        '10-1': [_s, _f('民岁腊', dj), _f('四天王降', '犯者一年内死')],
-        '10-3': [_d, _f('三茅诞')],
-        '10-5': [_f('下会日', js), _f('达摩祖师诞', js)],
+        '9-30': [_f('藥師琉璃光佛誕', '犯者危疾'), _hh, _m, _t],
+        '10-1': [_s, _f('民歲臘', dj), _f('四天王降', '犯者一年内死')],
+        '10-3': [_d, _f('三茅誕')],
+        '10-5': [_f('下會日', js), _f('達摩祖師誕', js)],
         '10-6': [_l, _f('天曹考察', dj)],
         '10-8': [_f('佛涅槃日', '', false, '大忌色欲'), _t],
         '10-10': [_f('四天王降', '犯者一年内死')],
@@ -6495,79 +7618,79 @@
         '10-16': [_f('三元降', js), _t],
         '10-23': [_y, _t],
         '10-25': [_h],
-        '10-27': [_d, _f('北极紫徽大帝降')],
+        '10-27': [_d, _f('北極紫徽大帝降')],
         '10-28': [_r],
         '10-29': [_t],
         '10-30': [_hh, _m, _t],
         '11-1': [_s],
         '11-3': [_d],
-        '11-4': [_f('至圣先师孔子诞', xl)],
-        '11-6': [_f('西岳大帝诞')],
+        '11-4': [_f('至聖先師孔子誕', xl)],
+        '11-6': [_f('西岳大帝誕')],
         '11-8': [_t],
-        '11-11': [_f('天地仓开日', dj), _f('太乙救苦天尊诞', dj)],
+        '11-11': [_f('天地倉開日', dj), _f('太乙救苦天尊誕', dj)],
         '11-14': [_t],
         '11-15': [_f('月望', '上半夜犯男死 下半夜犯女死'), _f('四天王巡行', '上半夜犯男死 下半夜犯女死')],
-        '11-17': [_f('阿弥陀佛诞')],
-        '11-19': [_f('太阳日宫诞', '犯者得奇祸')],
+        '11-17': [_f('阿彌陀佛誕')],
+        '11-19': [_f('太陽日宫誕', '犯者得奇禍')],
         '11-21': [_y],
-        '11-23': [_f('张仙诞', '犯者绝嗣'), _t],
+        '11-23': [_f('張仙誕', '犯者絕嗣'), _t],
         '11-25': [_f('掠刷大夫降', '犯者遭大凶'), _h],
-        '11-26': [_f('北方五道诞')],
+        '11-26': [_f('北方五道誕')],
         '11-27': [_d],
         '11-28': [_r],
         '11-29': [_t],
         '11-30': [_hh, _m, _t],
         '12-1': [_s],
         '12-3': [_d],
-        '12-6': [_f('天地仓开日', js), _l],
-        '12-7': [_f('掠刷大夫降', '犯者得恶疾')],
-        '12-8': [_f('王侯腊', dj), _f('释迦如来成佛之辰'), _t, _f('初旬内戊日，亦名王侯腊', dj)],
+        '12-6': [_f('天地倉開日', js), _l],
+        '12-7': [_f('掠刷大夫降', '犯者得惡疾')],
+        '12-8': [_f('王侯臘', dj), _f('釋迦如來成佛之辰'), _t, _f('初旬内戊日，亦名王侯臘', dj)],
         '12-12': [_f('太素三元君朝真')],
         '12-14': [_t],
         '12-15': [_w, _t],
-        '12-16': [_f('南岳大帝诞')],
+        '12-16': [_f('南岳大帝誕')],
         '12-19': [_y],
-        '12-20': [_f('天地交道', '犯者促寿')],
-        '12-21': [_f('天猷上帝诞')],
-        '12-23': [_f('五岳诞降'), _t],
-        '12-24': [_f('司今朝天奏人善恶', '犯者得大祸')],
-        '12-25': [_f('三清玉帝同降，考察善恶', '犯者得奇祸'), _h],
+        '12-20': [_f('天地交道', '犯者促壽')],
+        '12-21': [_f('天猷上帝誕')],
+        '12-23': [_f('五岳誕降'), _t],
+        '12-24': [_f('司今朝天奏人善惡', '犯者得大禍')],
+        '12-25': [_f('三清玉帝同降，考察善惡', '犯者得奇禍'), _h],
         '12-27': [_d],
         '12-28': [_r],
-        '12-29': [_f('华严菩萨诞'), _t],
-        '12-30': [_f('诸神下降，察访善恶', '犯者男女俱亡')]
+        '12-29': [_f('華嚴菩薩誕'), _t],
+        '12-30': [_f('諸神下降，察訪善惡', '犯者男女俱亡')]
       },
       OTHER_FESTIVAL:{
-        '1-1': ['弥勒菩萨圣诞'],
-        '1-6': ['定光佛圣诞'],
-        '2-8': ['释迦牟尼佛出家'],
-        '2-15': ['释迦牟尼佛涅槃'],
-        '2-19': ['观世音菩萨圣诞'],
-        '2-21': ['普贤菩萨圣诞'],
-        '3-16': ['准提菩萨圣诞'],
-        '4-4': ['文殊菩萨圣诞'],
-        '4-8': ['释迦牟尼佛圣诞'],
+        '1-1': ['彌勒菩薩聖誕'],
+        '1-6': ['定光佛聖誕'],
+        '2-8': ['釋迦牟尼佛出家'],
+        '2-15': ['釋迦牟尼佛涅槃'],
+        '2-19': ['觀世音菩薩聖誕'],
+        '2-21': ['普賢菩薩聖誕'],
+        '3-16': ['準提菩薩聖誕'],
+        '4-4': ['文殊菩薩聖誕'],
+        '4-8': ['釋迦牟尼佛聖誕'],
         '4-15': ['佛吉祥日'],
-        '4-28': ['药王菩萨圣诞'],
-        '5-13': ['伽蓝菩萨圣诞'],
-        '6-3': ['韦驮菩萨圣诞'],
-        '6-19': ['观音菩萨成道'],
-        '7-13': ['大势至菩萨圣诞'],
-        '7-15': ['佛欢喜日'],
-        '7-24': ['龙树菩萨圣诞'],
-        '7-30': ['地藏菩萨圣诞'],
-        '8-15': ['月光菩萨圣诞'],
-        '8-22': ['燃灯佛圣诞'],
-        '9-9': ['摩利支天菩萨圣诞'],
-        '9-19': ['观世音菩萨出家'],
-        '9-30': ['药师琉璃光佛圣诞'],
-        '10-5': ['达摩祖师圣诞'],
-        '10-20': ['文殊菩萨出家'],
-        '11-17': ['阿弥陀佛圣诞'],
-        '11-19': ['日光菩萨圣诞'],
-        '12-8': ['释迦牟尼佛成道'],
-        '12-23': ['监斋菩萨圣诞'],
-        '12-29': ['华严菩萨圣诞']
+        '4-28': ['藥王菩薩聖誕'],
+        '5-13': ['伽藍菩薩聖誕'],
+        '6-3': ['韋馱菩薩聖誕'],
+        '6-19': ['觀音菩薩成道'],
+        '7-13': ['大勢至菩薩聖誕'],
+        '7-15': ['佛歡喜日'],
+        '7-24': ['龍樹菩薩聖誕'],
+        '7-30': ['地藏菩薩聖誕'],
+        '8-15': ['月光菩薩聖誕'],
+        '8-22': ['燃灯佛聖誕'],
+        '9-9': ['摩利支天菩薩聖誕'],
+        '9-19': ['觀世音菩薩出家'],
+        '9-30': ['藥師琉璃光佛聖誕'],
+        '10-5': ['達摩祖師聖誕'],
+        '10-20': ['文殊菩薩出家'],
+        '11-17': ['阿彌陀佛聖誕'],
+        '11-19': ['日光菩薩聖誕'],
+        '12-8': ['釋迦牟尼佛成道'],
+        '12-23': ['監齋菩薩聖誕'],
+        '12-29': ['華嚴菩薩聖誕']
       },
       getXiu:function(m,d){return _getXiu(m,d);}
     }
@@ -6622,7 +7745,7 @@
         isDayYangGong:function(){
           var l = this.getFestivals();
           for(var i=0,j=l.length;i<j;i++){
-            if('杨公忌'===l[i].getName()){
+            if('楊公忌'===l[i].getName()){
               return true;
             }
           }
@@ -6699,6 +7822,7 @@
     };
   })();
   var TaoFestival = (function(){
+    // 道教節日
     var _f=function(name,remark){
       return {
         _p:{
@@ -6722,6 +7846,7 @@
     };
   })();
   var TaoUtil = (function(){
+    // 道教用
     var _f = TaoFestival.create;
     return {
       SAN_HUI:['1-7','7-7','10-15'],
@@ -6729,91 +7854,91 @@
       WU_LA:['1-1','5-5','7-7','10-1','12-8'],
       AN_WU:['{dz.wei}', '{dz.xu}', '{dz.chen}', '{dz.yin}', '{dz.wu}', '{dz.zi}', '{dz.you}', '{dz.shen}', '{dz.si}', '{dz.hai}', '{dz.mao}', '{dz.chou}'],
       BA_HUI:{
-        '{jz.bingWu}':'天会',
-        '{jz.renWu}':'地会',
-        '{jz.renZi}':'人会',
-        '{jz.gengWu}':'日会',
-        '{jz.gengShen}':'月会',
-        '{jz.xinYou}':'星辰会',
-        '{jz.jiaChen}':'五行会',
-        '{jz.jiaXu}':'四时会'
+        '{jz.bingWu}':'天會',
+        '{jz.renWu}':'地會',
+        '{jz.renZi}':'人會',
+        '{jz.gengWu}':'日會',
+        '{jz.gengShen}':'月會',
+        '{jz.xinYou}':'星辰會',
+        '{jz.jiaChen}':'五行會',
+        '{jz.jiaXu}':'四時會'
       },
       BA_JIE:{
-        '{jq.liChun}':'东北方度仙上圣天尊同梵炁始青天君下降',
-        '{jq.chunFen}':'东方玉宝星上天尊同青帝九炁天君下降',
-        '{jq.liXia}':'东南方好生度命天尊同梵炁始丹天君下降',
-        '{jq.xiaZhi}':'南方玄真万福天尊同赤帝三炁天君下降',
-        '{jq.liQiu}':'西南方太灵虚皇天尊同梵炁始素天君下降',
-        '{jq.qiuFen}':'西方太妙至极天尊同白帝七炁天君下降',
-        '{jq.liDong}':'西北方无量太华天尊同梵炁始玄天君下降',
+        '{jq.liChun}':'東北方度仙上聖天尊同梵炁始青天君下降',
+        '{jq.chunFen}':'東方玉寶星上天尊同青帝九炁天君下降',
+        '{jq.liXia}':'東南方好生度命天尊同梵炁始丹天君下降',
+        '{jq.xiaZhi}':'南方玄真萬福天尊同赤帝三炁天君下降',
+        '{jq.liQiu}':'西南方太靈虛皇天尊同梵炁始素天君下降',
+        '{jq.qiuFen}':'西方太妙至極天尊同白帝七炁天君下降',
+        '{jq.liDong}':'西北方無量太華天尊同梵炁始玄天君下降',
         '{jq.dongZhi}':'北方玄上玉宸天尊同黑帝五炁天君下降'
       },
       FESTIVAL: {
-        '1-1': [_f('天腊之辰', '天腊，此日五帝会于东方九炁青天')],
-        '1-3': [_f('郝真人圣诞'), _f('孙真人圣诞')],
-        '1-5': [_f('孙祖清静元君诞')],
-        '1-7': [_f('举迁赏会', '此日上元赐福，天官同地水二官考校罪福')],
-        '1-9': [_f('玉皇上帝圣诞')],
-        '1-13': [_f('关圣帝君飞升')],
-        '1-15': [_f('上元天官圣诞'), _f('老祖天师圣诞')],
-        '1-19': [_f('长春邱真人(邱处机)圣诞')],
-        '1-28': [_f('许真君(许逊天师)圣诞')],
-        '2-1': [_f('勾陈天皇大帝圣诞'), _f('长春刘真人(刘渊然)圣诞')],
-        '2-2': [_f('土地正神诞'), _f('姜太公圣诞')],
-        '2-3': [_f('文昌梓潼帝君圣诞')],
-        '2-6': [_f('东华帝君圣诞')],
-        '2-13': [_f('度人无量葛真君圣诞')],
-        '2-15': [_f('太清道德天尊(太上老君)圣诞')],
-        '2-19': [_f('慈航真人圣诞')],
-        '3-1': [_f('谭祖(谭处端)长真真人圣诞')],
-        '3-3': [_f('玄天上帝圣诞')],
-        '3-6': [_f('眼光娘娘圣诞')],
-        '3-15': [_f('天师张大真人圣诞'), _f('财神赵公元帅圣诞')],
-        '3-16': [_f('三茅真君得道之辰'), _f('中岳大帝圣诞')],
-        '3-18': [_f('王祖(王处一)玉阳真人圣诞'), _f('后土娘娘圣诞')],
-        '3-19': [_f('太阳星君圣诞')],
-        '3-20': [_f('子孙娘娘圣诞')],
-        '3-23': [_f('天后妈祖圣诞')],
-        '3-26': [_f('鬼谷先师诞')],
-        '3-28': [_f('东岳大帝圣诞')],
-        '4-1': [_f('长生谭真君成道之辰')],
-        '4-10': [_f('何仙姑圣诞')],
-        '4-14': [_f('吕祖纯阳祖师圣诞')],
-        '4-15': [_f('钟离祖师圣诞')],
-        '4-18': [_f('北极紫微大帝圣诞'), _f('泰山圣母碧霞元君诞'), _f('华佗神医先师诞')],
-        '4-20': [_f('眼光圣母娘娘诞')],
-        '4-28': [_f('神农先帝诞')],
-        '5-1': [_f('南极长生大帝圣诞')],
-        '5-5': [_f('地腊之辰', '地腊，此日五帝会于南方三炁丹天'), _f('南方雷祖圣诞'), _f('地祗温元帅圣诞'), _f('雷霆邓天君圣诞')],
-        '5-11': [_f('城隍爷圣诞')],
-        '5-13': [_f('关圣帝君降神'), _f('关平太子圣诞')],
-        '5-18': [_f('张天师圣诞')],
-        '5-20': [_f('马祖丹阳真人圣诞')],
-        '5-29': [_f('紫青白祖师圣诞')],
+        '1-1': [_f('天臘之辰', '天臘，此日五帝會于東方九炁青天')],
+        '1-3': [_f('郝真人聖誕'), _f('孫真人聖誕')],
+        '1-5': [_f('孫祖清静元君誕')],
+        '1-7': [_f('舉遷賞會', '此日上元賜福，天官同地水二官考校罪福')],
+        '1-9': [_f('玉皇上帝聖誕')],
+        '1-13': [_f('關聖帝君飛升')],
+        '1-15': [_f('上元天官聖誕'), _f('老祖天師聖誕')],
+        '1-19': [_f('長春邱真人(邱處機)聖誕')],
+        '1-28': [_f('許真君(許遜天師)聖誕')],
+        '2-1': [_f('勾陳天皇大帝聖誕'), _f('長春劉真人(劉淵然)聖誕')],
+        '2-2': [_f('土地正神誕'), _f('姜太公聖誕')],
+        '2-3': [_f('文昌梓潼帝君聖誕')],
+        '2-6': [_f('東華帝君聖誕')],
+        '2-13': [_f('度人無量葛真君聖誕')],
+        '2-15': [_f('太清道德天尊(太上老君)聖誕')],
+        '2-19': [_f('慈航真人聖誕')],
+        '3-1': [_f('譚祖(譚處端)長真真人聖誕')],
+        '3-3': [_f('玄天上帝聖誕')],
+        '3-6': [_f('眼光娘娘聖誕')],
+        '3-15': [_f('天師張大真人聖誕'), _f('財神趙公元帥聖誕')],
+        '3-16': [_f('三茅真君得道之辰'), _f('中岳大帝聖誕')],
+        '3-18': [_f('王祖(王處一)玉陽真人聖誕'), _f('后土娘娘聖誕')],
+        '3-19': [_f('太陽星君聖誕')],
+        '3-20': [_f('子孫娘娘聖誕')],
+        '3-23': [_f('天后媽祖聖誕')],
+        '3-26': [_f('鬼谷先師誕')],
+        '3-28': [_f('東岳大帝聖誕')],
+        '4-1': [_f('長生譚真君成道之辰')],
+        '4-10': [_f('何仙姑聖誕')],
+        '4-14': [_f('吕祖純陽祖師聖誕')],
+        '4-15': [_f('鍾離祖師聖誕')],
+        '4-18': [_f('北極紫微大帝聖誕'), _f('泰山聖母碧霞元君誕'), _f('華佗神醫先師誕')],
+        '4-20': [_f('眼光聖母娘娘誕')],
+        '4-28': [_f('神農先帝誕')],
+        '5-1': [_f('南極長生大帝聖誕')],
+        '5-5': [_f('地臘之辰', '地臘，此日五帝會于南方三炁丹天'), _f('南方雷祖聖誕'), _f('地祗温元帥聖誕'), _f('雷霆鄧天君聖誕')],
+        '5-11': [_f('城隍爺聖誕')],
+        '5-13': [_f('關聖帝君降神'), _f('關平太子聖誕')],
+        '5-18': [_f('張天師聖誕')],
+        '5-20': [_f('馬祖丹陽真人聖誕')],
+        '5-29': [_f('紫青白祖師聖誕')],
         '6-1': [_f('南斗星君下降')],
         '6-2': [_f('南斗星君下降')],
         '6-3': [_f('南斗星君下降')],
         '6-4': [_f('南斗星君下降')],
         '6-5': [_f('南斗星君下降')],
         '6-6': [_f('南斗星君下降')],
-        '6-10': [_f('刘海蟾祖师圣诞')],
-        '6-15': [_f('灵官王天君圣诞')],
-        '6-19': [_f('慈航(观音)成道日')],
-        '6-23': [_f('火神圣诞')],
-        '6-24': [_f('南极大帝中方雷祖圣诞'), _f('关圣帝君圣诞')],
-        '6-26': [_f('二郎真君圣诞')],
-        '7-7': [_f('道德腊之辰', '道德腊，此日五帝会于西方七炁素天'), _f('庆生中会', '此日中元赦罪，地官同天水二官考校罪福')],
-        '7-12': [_f('西方雷祖圣诞')],
-        '7-15': [_f('中元地官大帝圣诞')],
-        '7-18': [_f('王母娘娘圣诞')],
-        '7-20': [_f('刘祖(刘处玄)长生真人圣诞')],
-        '7-22': [_f('财帛星君文财神增福相公李诡祖圣诞')],
-        '7-26': [_f('张三丰祖师圣诞')],
-        '8-1': [_f('许真君飞升日')],
-        '8-3': [_f('九天司命灶君诞')],
-        '8-5': [_f('北方雷祖圣诞')],
-        '8-10': [_f('北岳大帝诞辰')],
-        '8-15': [_f('太阴星君诞')],
+        '6-10': [_f('劉海蟾祖師聖誕')],
+        '6-15': [_f('靈官王天君聖誕')],
+        '6-19': [_f('慈航(觀音)成道日')],
+        '6-23': [_f('火神聖誕')],
+        '6-24': [_f('南極大帝中方雷祖聖誕'), _f('關聖帝君聖誕')],
+        '6-26': [_f('二郎真君聖誕')],
+        '7-7': [_f('道德臘之辰', '道德臘，此日五帝會于西方七炁素天'), _f('慶生中會', '此日中元赦罪，地官同天水二官考校罪福')],
+        '7-12': [_f('西方雷祖聖誕')],
+        '7-15': [_f('中元地官大帝聖誕')],
+        '7-18': [_f('王母娘娘聖誕')],
+        '7-20': [_f('劉祖(劉處玄)長生真人聖誕')],
+        '7-22': [_f('財帛星君文財神增福相公李詭祖聖誕')],
+        '7-26': [_f('張三豐祖師聖誕')],
+        '8-1': [_f('許真君飛升日')],
+        '8-3': [_f('九天司命灶君誕')],
+        '8-5': [_f('北方雷祖聖誕')],
+        '8-10': [_f('北岳大帝誕辰')],
+        '8-15': [_f('太陰星君誕')],
         '9-1': [_f('北斗九皇降世之辰')],
         '9-2': [_f('北斗九皇降世之辰')],
         '9-3': [_f('北斗九皇降世之辰')],
@@ -6822,33 +7947,34 @@
         '9-6': [_f('北斗九皇降世之辰')],
         '9-7': [_f('北斗九皇降世之辰')],
         '9-8': [_f('北斗九皇降世之辰')],
-        '9-9': [_f('北斗九皇降世之辰'), _f('斗姥元君圣诞'), _f('重阳帝君圣诞'), _f('玄天上帝飞升'), _f('酆都大帝圣诞')],
-        '9-22': [_f('增福财神诞')],
-        '9-23': [_f('萨翁真君圣诞')],
-        '9-28': [_f('五显灵官马元帅圣诞')],
-        '10-1': [_f('民岁腊之辰', '民岁腊，此日五帝会于北方五炁黑天'), _f('东皇大帝圣诞')],
-        '10-3': [_f('三茅应化真君圣诞')],
-        '10-6': [_f('天曹诸司五岳五帝圣诞')],
-        '10-15': [_f('下元水官大帝圣诞'), _f('建生大会', '此日下元解厄，水官同天地二官考校罪福')],
-        '10-18': [_f('地母娘娘圣诞')],
-        '10-19': [_f('长春邱真君飞升')],
-        '10-20': [_f('虚靖天师(即三十代天师弘悟张真人)诞')],
-        '11-6': [_f('西岳大帝圣诞')],
-        '11-9': [_f('湘子韩祖圣诞')],
-        '11-11': [_f('太乙救苦天尊圣诞')],
-        '11-26': [_f('北方五道圣诞')],
-        '12-8': [_f('王侯腊之辰', '王侯腊，此日五帝会于上方玄都玉京')],
-        '12-16': [_f('南岳大帝圣诞'), _f('福德正神诞')],
-        '12-20': [_f('鲁班先师圣诞')],
-        '12-21': [_f('天猷上帝圣诞')],
-        '12-22': [_f('重阳祖师圣诞')],
-        '12-23': [_f('祭灶王', '最适宜谢旧年太岁，开启拜新年太岁')],
+        '9-9': [_f('北斗九皇降世之辰'), _f('斗姥元君聖誕'), _f('重陽帝君聖誕'), _f('玄天上帝飛升'), _f('酆都大帝聖誕')],
+        '9-22': [_f('增福財神誕')],
+        '9-23': [_f('薩翁真君聖誕')],
+        '9-28': [_f('五顯靈官馬元帥聖誕')],
+        '10-1': [_f('民歲臘之辰', '民歲臘，此日五帝會于北方五炁黑天'), _f('東皇大帝聖誕')],
+        '10-3': [_f('三茅應化真君聖誕')],
+        '10-6': [_f('天曹諸司五岳五帝聖誕')],
+        '10-15': [_f('下元水官大帝聖誕'), _f('建生大會', '此日下元解厄，水官同天地二官考校罪福')],
+        '10-18': [_f('地母娘娘聖誕')],
+        '10-19': [_f('長春邱真君飛升')],
+        '10-20': [_f('虛靖天師(即三十代天師弘悟張真人)誕')],
+        '11-6': [_f('西岳大帝聖誕')],
+        '11-9': [_f('湘子韓祖聖誕')],
+        '11-11': [_f('太乙救苦天尊聖誕')],
+        '11-26': [_f('北方五道聖誕')],
+        '12-8': [_f('王侯臘之辰', '王侯臘，此日五帝會于上方玄都玉京')],
+        '12-16': [_f('南岳大帝聖誕'), _f('福德正神誕')],
+        '12-20': [_f('魯班先師聖誕')],
+        '12-21': [_f('天猷上帝聖誕')],
+        '12-22': [_f('重陽祖師聖誕')],
+        '12-23': [_f('祭灶王', '最適宜謝舊年太歲，開啟拜新年太歲')],
         '12-25': [_f('玉帝巡天'), _f('天神下降')],
-        '12-29': [_f('清静孙真君(孙不二)成道')]
+        '12-29': [_f('清静孫真君(孫不二)成道')]
       }
     }
   })();
   var NineStarUtil = (function(){
+    // 飛星用
     return {
       NUMBER:[
         '{n.one}',
@@ -6919,6 +8045,7 @@
     }
   })();
   var Tao = (function(){
+    // 道教用
     var _fromYmdHms=function(y,m,d,hour,minute,second){
       return _fromLunar(Lunar.fromYmdHms(y+Tao.BIRTH_YEAR,m,d,hour,minute,second));
     };
@@ -6952,9 +8079,9 @@
           }
           var jq = this._p.lunar.getJieQi();
           if(I18n.getMessage('jq.dongZhi')===jq){
-            l.push(TaoFestival.create('元始天尊圣诞'));
+            l.push(TaoFestival.create('元始天尊聖誕'));
           }else if(I18n.getMessage('jq.xiaZhi')===jq){
-            l.push(TaoFestival.create('灵宝天尊圣诞'));
+            l.push(TaoFestival.create('靈寶天尊聖誕'));
           }
           var f = TaoUtil.BA_JIE[jq];
           if(f){
@@ -7010,7 +8137,7 @@
           return this.getYearInChinese()+'年'+this.getMonthInChinese()+'月'+this.getDayInChinese();
         },
         toFullString:function(){
-          return '道歷'+this.getYearInChinese()+'年，天運'+this._p.lunar.getYearInGanZhi()+'年，'+this._p.lunar.getMonthInGanZhi()+'月，'+this._p.lunar.getDayInGanZhi()+'日。'+this.getMonthInChinese()+'月'+this.getDayInChinese()+'日，'+this._p.lunar.getTimeZhi()+'時。';
+          return '道曆'+this.getYearInChinese()+'年，天運'+this._p.lunar.getYearInGanZhi()+'年，'+this._p.lunar.getMonthInGanZhi()+'月，'+this._p.lunar.getDayInGanZhi()+'日。'+this.getMonthInChinese()+'月'+this.getDayInChinese()+'日，'+this._p.lunar.getTimeZhi()+'時。';
         }
       };
     };
@@ -7022,6 +8149,7 @@
     };
   })();
   var I18n = (function(){
+    // 中英對照
     var _defaultLang = 'chs';
     var _lang = _defaultLang;
     var _inited = false;
@@ -7054,13 +8182,13 @@
         'zx.man': '满',
         'zx.ping': '平',
         'zx.ding': '定',
-        'zx.zhi': '执',
+        'zx.zhi': '執',
         'zx.po': '破',
         'zx.wei': '危',
         'zx.cheng': '成',
         'zx.shou': '收',
-        'zx.kai': '开',
-        'zx.bi': '闭',
+        'zx.kai': '開',
+        'zx.bi': '閉',
         'jz.jiaZi': '甲子',
         'jz.yiChou': '乙丑',
         'jz.bingYin': '丙寅',
@@ -7125,22 +8253,22 @@
         'sx.ox': '牛',
         'sx.tiger': '虎',
         'sx.rabbit': '兔',
-        'sx.dragon': '龙',
+        'sx.dragon': '龍',
         'sx.snake': '蛇',
-        'sx.horse': '马',
+        'sx.horse': '馬',
         'sx.goat': '羊',
         'sx.monkey': '猴',
-        'sx.rooster': '鸡',
+        'sx.rooster': '雞',
         'sx.dog': '狗',
         'sx.pig': '猪',
-        'dw.long': '龙',
+        'dw.long': '龍',
         'dw.niu': '牛',
         'dw.gou': '狗',
         'dw.yang': '羊',
         'dw.tu': '兔',
         'dw.shu': '鼠',
-        'dw.ji': '鸡',
-        'dw.ma': '马',
+        'dw.ji': '雞',
+        'dw.ma': '馬',
         'dw.hu': '虎',
         'dw.zhu': '猪',
         'dw.hou': '猴',
@@ -7151,7 +8279,7 @@
         'dw.yuan': '猿',
         'dw.yin': '蚓',
         'dw.lu': '鹿',
-        'dw.wu': '乌',
+        'dw.wu': '鳥',
         'dw.jiao': '蛟',
         'dw.lang': '狼',
         'dw.fu': '蝠',
@@ -7222,7 +8350,7 @@
         'm.nine': '九',
         'm.ten': '十',
         'm.eleven': '冬',
-        'm.twelve': '腊',
+        'm.twelve': '臘',
         'w.sun': '日',
         'w.mon': '一',
         'w.tues': '二',
@@ -7235,33 +8363,33 @@
         'xz.gemini': '双子',
         'xz.cancer': '巨蟹',
         'xz.leo': '狮子',
-        'xz.virgo': '处女',
+        'xz.virgo': '處女',
         'xz.libra': '天秤',
         'xz.scorpio': '天蝎',
         'xz.sagittarius': '射手',
         'xz.capricornus': '摩羯',
         'xz.aquarius': '水瓶',
-        'xz.pisces': '双鱼',
+        'xz.pisces': '双魚',
         'bg.qian': '乾',
         'bg.kun': '坤',
         'bg.zhen': '震',
         'bg.xun': '巽',
         'bg.kan': '坎',
-        'bg.li': '离',
+        'bg.li': '離',
         'bg.gen': '艮',
-        'bg.dui': '兑',
+        'bg.dui': '兌',
         'ps.center': '中',
-        'ps.dong': '东',
+        'ps.dong': '東',
         'ps.nan': '南',
         'ps.xi': '西',
         'ps.bei': '北',
         'ps.zhong': '中宫',
-        'ps.zhengDong': '正东',
+        'ps.zhengDong': '正東',
         'ps.zhengNan': '正南',
         'ps.zhengXi': '正西',
         'ps.zhengBei': '正北',
-        'ps.dongBei': '东北',
-        'ps.dongNan': '东南',
+        'ps.dongBei': '東北',
+        'ps.dongNan': '東南',
         'ps.xiBei': '西北',
         'ps.xiNan': '西南',
         'ps.wai': '外',
@@ -7271,18 +8399,18 @@
         'jq.daHan': '大寒',
         'jq.liChun': '立春',
         'jq.yuShui': '雨水',
-        'jq.jingZhe': '惊蛰',
+        'jq.jingZhe': '驚蟄',
         'jq.chunFen': '春分',
         'jq.qingMing': '清明',
         'jq.guYu': '谷雨',
         'jq.liXia': '立夏',
         'jq.xiaoMan': '小满',
-        'jq.mangZhong': '芒种',
+        'jq.mangZhong': '芒種',
         'jq.xiaZhi': '夏至',
         'jq.xiaoShu': '小暑',
         'jq.daShu': '大暑',
         'jq.liQiu': '立秋',
-        'jq.chuShu': '处暑',
+        'jq.chuShu': '處暑',
         'jq.baiLu': '白露',
         'jq.qiuFen': '秋分',
         'jq.hanLu': '寒露',
@@ -7290,289 +8418,284 @@
         'jq.liDong': '立冬',
         'jq.xiaoXue': '小雪',
         'jq.daXue': '大雪',
-        'sn.qingLong': '青龙',
+        'sn.qingLong': '青龍',
         'sn.baiHu': '白虎',
         'sn.zhuQue': '朱雀',
         'sn.xuanWu': '玄武',
         'sn.mingTang': '明堂',
         'sn.tianXing': '天刑',
         'sn.tianDe': '天德',
-        'sn.jinKui': '金匮',
+        'sn.jinKui': '金匱',
         'sn.yuTang': '玉堂',
         'sn.siMing': '司命',
         'sn.tianLao': '天牢',
-        'sn.gouChen': '勾陈',
+        'sn.gouChen': '勾陳',
         'sn.tianEn': '天恩',
-        'sn.muCang': '母仓',
-        'sn.shiYang': '时阳',
-        'sn.shengQi': '生气',
+        'sn.muCang': '母倉',
+        'sn.shiYang': '時陽',
+        'sn.shengQi': '生氣',
         'sn.yiHou': '益后',
-        'sn.zaiSha': '灾煞',
+        'sn.zaiSha': '災煞',
         'sn.tianHuo': '天火',
         'sn.siJi': '四忌',
-        'sn.baLong': '八龙',
-        'sn.fuRi': '复日',
-        'sn.xuShi': '续世',
+        'sn.baLong': '八龍',
+        'sn.fuRi': '復日',
+        'sn.xuShi': '續世',
         'sn.yueSha': '月煞',
-        'sn.yueXu': '月虚',
+        'sn.yueXu': '月虛',
         'sn.xueZhi': '血支',
         'sn.tianZei': '天贼',
-        'sn.wuXu': '五虚',
+        'sn.wuXu': '五虛',
         'sn.tuFu': '土符',
-        'sn.guiJi': '归忌',
+        'sn.guiJi': '歸忌',
         'sn.xueJi': '血忌',
         'sn.yueDe': '月德',
         'sn.yueEn': '月恩',
         'sn.siXiang': '四相',
         'sn.wangRi': '王日',
-        'sn.tianCang': '天仓',
-        'sn.buJiang': '不将',
+        'sn.tianCang': '天倉',
+        'sn.buJiang': '不將',
         'sn.wuHe': '五合',
-        'sn.mingFeiDui': '鸣吠对',
+        'sn.mingFeiDui': '鳴吠對',
         'sn.yueJian': '月建',
-        'sn.xiaoShi': '小时',
+        'sn.xiaoShi': '小時',
         'sn.tuHu': '土府',
         'sn.wangWang': '往亡',
         'sn.yaoAn': '要安',
         'sn.siShen': '死神',
-        'sn.tianMa': '天马',
+        'sn.tianMa': '天馬',
         'sn.jiuHu': '九虎',
-        'sn.qiNiao': '七鸟',
+        'sn.qiNiao': '七鳥',
         'sn.liuShe': '六蛇',
         'sn.guanRi': '官日',
         'sn.jiQi': '吉期',
         'sn.yuYu': '玉宇',
-        'sn.daShi': '大时',
-        'sn.daBai': '大败',
+        'sn.daShi': '大時',
+        'sn.daBai': '大敗',
         'sn.xianChi': '咸池',
         'sn.shouRi': '守日',
         'sn.tianWu': '天巫',
         'sn.fuDe': '福德',
-        'sn.liuYi': '六仪',
+        'sn.liuYi': '六儀',
         'sn.jinTang': '金堂',
-        'sn.yanDui': '厌对',
+        'sn.yanDui': '厭對',
         'sn.zhaoYao': '招摇',
         'sn.jiuKong': '九空',
         'sn.jiuKan': '九坎',
         'sn.jiuJiao': '九焦',
         'sn.xiangRi': '相日',
-        'sn.baoGuang': '宝光',
+        'sn.baoGuang': '寶光',
         'sn.tianGang': '天罡',
         'sn.yueXing': '月刑',
         'sn.yueHai': '月害',
-        'sn.youHuo': '游祸',
+        'sn.youHuo': '遊禍',
         'sn.chongRi': '重日',
-        'sn.shiDe': '时德',
+        'sn.shiDe': '時德',
         'sn.minRi': '民日',
         'sn.sanHe': '三合',
-        'sn.linRi': '临日',
-        'sn.shiYin': '时阴',
-        'sn.mingFei': '鸣吠',
-        'sn.siQi': '死气',
+        'sn.linRi': '臨日',
+        'sn.shiYin': '時陰',
+        'sn.mingFei': '鳴吠',
+        'sn.siQi': '死氣',
         'sn.diNang': '地囊',
         'sn.yueDeHe': '月德合',
         'sn.jingAn': '敬安',
-        'sn.puHu': '普护',
+        'sn.puHu': '普護',
         'sn.jieShen': '解神',
         'sn.xiaoHao': '小耗',
         'sn.tianDeHe': '天德合',
         'sn.yueKong': '月空',
-        'sn.yiMa': '驿马',
+        'sn.yiMa': '驛馬',
         'sn.tianHou': '天后',
         'sn.chuShen': '除神',
         'sn.yuePo': '月破',
         'sn.daHao': '大耗',
-        'sn.wuLi': '五离',
-        'sn.yinDe': '阴德',
+        'sn.wuLi': '五離',
+        'sn.yinDe': '陰德',
         'sn.fuSheng': '福生',
         'sn.tianLi': '天吏',
         'sn.zhiSi': '致死',
         'sn.yuanWu': '元武',
-        'sn.yangDe': '阳德',
+        'sn.yangDe': '陽德',
         'sn.tianXi': '天喜',
-        'sn.tianYi': '天医',
-        'sn.yueYan': '月厌',
+        'sn.tianYi': '天醫',
+        'sn.yueYan': '月厭',
         'sn.diHuo': '地火',
-        'sn.fourHit': '四击',
+        'sn.fourHit': '四擊',
         'sn.daSha': '大煞',
-        'sn.daHui': '大会',
+        'sn.daHui': '大會',
         'sn.tianYuan': '天愿',
         'sn.liuHe': '六合',
         'sn.wuFu': '五富',
-        'sn.shengXin': '圣心',
+        'sn.shengXin': '聖心',
         'sn.heKui': '河魁',
         'sn.jieSha': '劫煞',
-        'sn.siQiong': '四穷',
-        'sn.chuShuiLong': '触水龙',
-        'sn.baFeng': '八风',
+        'sn.siQiong': '四窮',
+        'sn.chuShuiLong': '觸水龍',
+        'sn.baFeng': '八風',
         'sn.tianShe': '天赦',
         'sn.wuMu': '五墓',
-        'sn.baZhuan': '八专',
-        'sn.yinCuo': '阴错',
+        'sn.baZhuan': '八專',
+        'sn.yinCuo': '陰錯',
         'sn.siHao': '四耗',
-        'sn.yangCuo': '阳错',
-        'sn.siFei': '四废',
-        'sn.sanYin': '三阴',
-        'sn.xiaoHui': '小会',
-        'sn.yinDaoChongYang': '阴道冲阳',
-        'sn.danYin': '单阴',
+        'sn.yangCuo': '陽錯',
+        'sn.siFei': '四廢',
+        'sn.sanYin': '三陰',
+        'sn.xiaoHui': '小會',
+        'sn.yinDaoChongYang': '陰道沖陽',
+        'sn.danYin': '單陰',
         'sn.guChen': '孤辰',
-        'sn.yinWei': '阴位',
+        'sn.yinWei': '陰位',
         'sn.xingHen': '行狠',
         'sn.liaoLi': '了戾',
-        'sn.jueYin': '绝阴',
-        'sn.chunYang': '纯阳',
-        'sn.suiBo': '岁薄',
-        'sn.yinYangJiaoPo': '阴阳交破',
-        'sn.yinYangJuCuo': '阴阳俱错',
-        'sn.yinYangJiChong': '阴阳击冲',
-        'sn.zhuZhen': '逐阵',
-        'sn.yangCuoYinChong': '阳错阴冲',
+        'sn.jueYin': '絕陰',
+        'sn.chunYang': '純陽',
+        'sn.suiBo': '歲薄',
+        'sn.yinYangJiaoPo': '陰陽交破',
+        'sn.yinYangJuCuo': '陰陽俱錯',
+        'sn.yinYangJiChong': '陰陽擊沖',
+        'sn.zhuZhen': '逐陣',
+        'sn.yangCuoYinChong': '陽錯陰沖',
         'sn.qiFu': '七符',
         'sn.tianGou': '天狗',
         'sn.chengRi': '成日',
         'sn.tianFu': '天符',
-        'sn.guYang': '孤阳',
-        'sn.jueYang': '绝阳',
-        'sn.chunYin': '纯阴',
-        'sn.yinShen': '阴神',
+        'sn.guYang': '孤陽',
+        'sn.jueYang': '絕陽',
+        'sn.chunYin': '純陰',
+        'sn.yinShen': '陰神',
         'sn.jieChu': '解除',
-        'sn.yangPoYinChong': '阳破阴冲',
+        'sn.yangPoYinChong': '陽破陰沖',
         'ss.biJian': '比肩',
-        'ss.jieCai': '劫财',
+        'ss.jieCai': '劫財',
         'ss.shiShen': '食神',
-        'ss.shangGuan': '伤官',
-        'ss.pianCai': '偏财',
-        'ss.zhengCai': '正财',
-        'ss.qiSha': '七杀',
+        'ss.shangGuan': '傷官',
+        'ss.pianCai': '偏財',
+        'ss.zhengCai': '正財',
+        'ss.qiSha': '七殺',
         'ss.zhengGuan': '正官',
         'ss.pianYin': '偏印',
         'ss.zhengYin': '正印',
-        's.none': '无',
+        's.none': '無',
         's.huangDao': '黄道',
         's.heiDao': '黑道',
         's.goodLuck': '吉',
         's.badLuck': '凶',
-        's.yin': '阴',
-        's.yang': '阳',
+        's.yin': '陰',
+        's.yang': '陽',
         's.white': '白',
         's.black': '黑',
         's.blue': '碧',
-        's.green': '绿',
+        's.green': '綠',
         's.yellow': '黄',
         's.red': '赤',
         's.purple': '紫',
         'jr.chuXi': '除夕',
-        'jr.chunJie': '春节',
-        'jr.yuanXiao': '元宵节',
-        'jr.longTou': '龙头节',
-        'jr.duanWu': '端午节',
-        'jr.qiXi': '七夕节',
-        'jr.zhongQiu': '中秋节',
-        'jr.chongYang': '重阳节',
-        'jr.laBa': '腊八节',
-        'jr.yuanDan': '元旦节',
-        'jr.qingRen': '情人节',
-        'jr.fuNv': '妇女节',
-        'jr.zhiShu': '植树节',
-        'jr.xiaoFei': '消费者权益日',
-        'jr.wuYi': '劳动节',
-        'jr.qingNian': '青年节',
-        'jr.erTong': '儿童节',
-        'jr.yuRen': '愚人节',
-        'jr.jianDang': '建党节',
-        'jr.jianJun': '建军节',
-        'jr.jiaoShi': '教师节',
-        'jr.guoQing': '国庆节',
-        'jr.wanShengYe': '万圣节前夜',
-        'jr.wanSheng': '万圣节',
+        'jr.chunJie': '春節',
+        'jr.yuanXiao': '元宵節',
+        'jr.longTou': '龍頭節',
+        'jr.duanWu': '端午節',
+        'jr.qiXi': '七夕節',
+        'jr.zhongQiu': '中秋節',
+        'jr.chongYang': '重陽節',
+        'jr.laBa': '臘八節',
+        'jr.yuanDan': '元旦',
+        'jr.qingRen': '情人節',
+        'jr.fuNv': '婦幼節',
+        'jr.zhiShu': '植樹節',
+        'jr.xiaoFei': '消費者權益日',
+        'jr.wuYi': '勞動節',
+        'jr.qingNian': '青年節',
+        'jr.erTong': '兒童節',
+        'jr.yuRen': '愚人節',
+        'jr.jianDang': '建黨節',
+        'jr.jianJun': '建軍節',
+        'jr.jiaoShi': '教師節',
+        'jr.guoQing': '國慶節',
+        'jr.wanShengYe': '萬聖節前夜',
+        'jr.wanSheng': '萬聖節',
         'jr.pingAn': '平安夜',
-        'jr.shengDan': '圣诞节',
-        'ds.changSheng': '长生',
+        'jr.shengDan': '聖誕節',
+        'ds.changSheng': '長生',
         'ds.muYu': '沐浴',
         'ds.guanDai': '冠带',
-        'ds.linGuan': '临官',
+        'ds.linGuan': '臨官',
         'ds.diWang': '帝旺',
         'ds.shuai': '衰',
         'ds.bing': '病',
         'ds.si': '死',
         'ds.mu': '墓',
-        'ds.jue': '绝',
+        'ds.jue': '絕',
         'ds.tai': '胎',
-        'ds.yang': '养',
+        'ds.yang': '養',
         'h.first': '初候',
         'h.second': '二候',
         'h.third': '三候',
-        'h.qiuYinJie': '蚯蚓结',
+        'h.qiuYinJie': '蚯蚓結',
         'h.miJiao': '麋角解',
-        'h.shuiQuan': '水泉动',
-        'h.yanBei': '雁北乡',
-        'h.queShi': '鹊始巢',
+        'h.shuiQuan': '水泉動',
+        'h.yanBei': '雁北鄉',
+        'h.queShi': '鵲始巢',
         'h.zhiShi': '雉始雊',
-        'h.jiShi': '鸡始乳',
-        'h.zhengNiao': '征鸟厉疾',
-        'h.shuiZe': '水泽腹坚',
-        'h.dongFeng': '东风解冻',
-        'h.zheChongShiZhen': '蛰虫始振',
-        'h.yuZhi': '鱼陟负冰',
-        'h.taJi': '獭祭鱼',
+        'h.jiShi': '雞始乳',
+        'h.zhengNiao': '征鳥厲疾',
+        'h.shuiZe': '水澤腹堅',
+        'h.dongFeng': '東風解凍',
+        'h.zheChongShiZhen': '蟄蟲始振',
+        'h.yuZhi': '鱼陟負冰',
+        'h.taJi': '獺祭鱼',
         'h.houYan': '候雁北',
-        'h.caoMuMengDong': '草木萌动',
-        'h.taoShi': '桃始华',
-        'h.cangGeng': '仓庚鸣',
-        'h.yingHua': '鹰化为鸠',
-        'h.xuanNiaoZhi': '玄鸟至',
-        'h.leiNai': '雷乃发声',
-        'h.shiDian': '始电',
-        'h.tongShi': '桐始华',
-        'h.tianShu': '田鼠化为鴽',
-        'h.hongShi': '虹始见',
-        'h.pingShi': '萍始生',
-        'h.mingJiu': '鸣鸠拂奇羽',
-        'h.daiSheng': '戴胜降于桑',
-        'h.louGuo': '蝼蝈鸣',
-        'h.qiuYinChu': '蚯蚓出',
-        'h.wangGua': '王瓜生',
+        'h.caoMuMengDong': '草木萌動',
+        'h.taoShi': '桃始華',
+        'h.cangGeng': '倉庚鳴',
+        'h.yingHua': '鷹化為鳩',
+        'h.xuanNiaoZhi': '玄鳥至',
+        'h.leiNai': '雷乃發聲',
+        'h.shiDian': '始電',
+        'h.tongShi': '父親節',
+        'h.tianShu': '田鼠化為鴽',
+        'h.hongShi': '虹始見',
+        'h.mingJiu': '鳴鳩拂奇羽',
         'h.kuCai': '苦菜秀',
         'h.miCao': '靡草死',
-        'h.maiQiu': '麦秋至',
+        'h.maiQiu': '麥秋至',
         'h.tangLang': '螳螂生',
-        'h.juShi': '鵙始鸣',
-        'h.fanShe': '反舌无声',
+        'h.juShi': '鵙始鳴',
+        'h.fanShe': '反舌無聲',
         'h.luJia': '鹿角解',
-        'h.tiaoShi': '蜩始鸣',
+        'h.tiaoShi': '蜩始鳴',
         'h.banXia': '半夏生',
-        'h.wenFeng': '温风至',
+        'h.wenFeng': '温風至',
         'h.xiShuai': '蟋蟀居壁',
-        'h.yingShi': '鹰始挚',
-        'h.fuCao': '腐草为萤',
-        'h.tuRun': '土润溽暑',
-        'h.daYu': '大雨行时',
-        'h.liangFeng': '凉风至',
+        'h.yingShi': '鷹始挚',
+        'h.fuCao': '腐草為螢',
+        'h.tuRun': '土潤溽暑',
+        'h.daYu': '大雨行時',
+        'h.liangFeng': '涼風至',
         'h.baiLu': '白露降',
-        'h.hanChan': '寒蝉鸣',
-        'h.yingNai': '鹰乃祭鸟',
-        'h.tianDi': '天地始肃',
+        'h.hanChan': '寒蟬鳴',
+        'h.yingNai': '鷹乃祭鳥',
+        'h.tianDi': '天地始肅',
         'h.heNai': '禾乃登',
-        'h.hongYanLai': '鸿雁来',
-        'h.xuanNiaoGui': '玄鸟归',
-        'h.qunNiao': '群鸟养羞',
-        'h.leiShi': '雷始收声',
-        'h.zheChongPiHu': '蛰虫坯户',
+        'h.hongYanLai': '鴻雁來',
+        'h.xuanNiaoGui': '玄鳥歸',
+        'h.qunNiao': '群鳥養羞',
+        'h.leiShi': '雷始收聲',
+        'h.zheChongPiHu': '蟄蟲壞户',
         'h.shuiShiHe': '水始涸',
-        'h.hongYanLaiBin': '鸿雁来宾',
-        'h.queRu': '雀入大水为蛤',
+        'h.hongYanLaiBin': '鴻雁來賓',
+        'h.queRu': '雀入大水為蛤',
         'h.juYou': '菊有黄花',
         'h.caiNai': '豺乃祭兽',
         'h.caoMuHuangLuo': '草木黄落',
-        'h.zheChongXianFu': '蛰虫咸俯',
+        'h.zheChongXianFu': '蟄蟲咸俯',
         'h.shuiShiBing': '水始冰',
-        'h.diShi': '地始冻',
-        'h.zhiRu': '雉入大水为蜃',
-        'h.hongCang': '虹藏不见',
-        'h.tianQi': '天气上升地气下降',
-        'h.biSe': '闭塞而成冬',
-        'h.heDan': '鹖鴠不鸣',
+        'h.diShi': '地始凍',
+        'h.zhiRu': '雉入大水為蜃',
+        'h.hongCang': '虹藏不見',
+        'h.tianQi': '天氣上升地氣下降',
+        'h.biSe': '閉塞而成冬',
+        'h.heDan': '鹖鴠不鳴',
         'h.huShi': '虎始交',
         'h.liTing': '荔挺出',
         'ts.zhan': '占',
@@ -7580,177 +8703,177 @@
         'ts.win': '窗',
         'ts.fang': '房',
         'ts.chuang': '床',
-        'ts.lu': '炉',
+        'ts.lu': '爐',
         'ts.zao': '灶',
         'ts.dui': '碓',
         'ts.mo': '磨',
         'ts.xi': '栖',
         'ts.chu': '厨',
-        'ts.ce': '厕',
-        'ts.cang': '仓',
-        'ts.cangKu': '仓库',
-        'ts.daMen': '大门',
-        'ts.men': '门',
+        'ts.ce': '廁',
+        'ts.cang': '倉',
+        'ts.cangKu': '倉庫',
+        'ts.daMen': '大門',
+        'ts.men': '門',
         'ts.tang': '堂',
-        'ly.xianSheng': '先胜',
-        'ly.xianFu': '先负',
+        'ly.xianSheng': '先勝',
+        'ly.xianFu': '先負',
         'ly.youYin': '友引',
-        'ly.foMie': '佛灭',
+        'ly.foMie': '佛滅',
         'ly.daAn': '大安',
         'ly.chiKou': '赤口',
         'yj.jiSi': '祭祀',
         'yj.qiFu': '祈福',
         'yj.qiuSi': '求嗣',
-        'yj.kaiGuang': '开光',
-        'yj.suHui': '塑绘',
-        'yj.qiJiao': '齐醮',
-        'yj.zhaiJiao': '斋醮',
+        'yj.kaiGuang': '開光',
+        'yj.suHui': '塑繪',
+        'yj.qiJiao': '齊醮',
+        'yj.zhaiJiao': '齋醮',
         'yj.muYu': '沐浴',
         'yj.chouShen': '酬神',
-        'yj.zaoMiao': '造庙',
+        'yj.zaoMiao': '造廟',
         'yj.siZhao': '祀灶',
         'yj.fenXiang': '焚香',
-        'yj.xieTu': '谢土',
+        'yj.xieTu': '謝土',
         'yj.chuHuo': '出火',
         'yj.diaoKe': '雕刻',
         'yj.jiaQu': '嫁娶',
-        'yj.DingHun': '订婚',
-        'yj.naCai': '纳采',
-        'yj.wenMing': '问名',
-        'yj.naXu': '纳婿',
-        'yj.guiNing': '归宁',
+        'yj.DingHun': '訂婚',
+        'yj.naCai': '納采',
+        'yj.wenMing': '問名',
+        'yj.naXu': '納婿',
+        'yj.guiNing': '歸寧',
         'yj.anChuang': '安床',
-        'yj.heZhang': '合帐',
+        'yj.heZhang': '合帳',
         'yj.guanJi': '冠笄',
-        'yj.dingMeng': '订盟',
-        'yj.jinRenKou': '进人口',
+        'yj.dingMeng': '訂盟',
+        'yj.jinRenKou': '進人口',
         'yj.caiYi': '裁衣',
         'yj.wanMian': '挽面',
-        'yj.kaiRong': '开容',
-        'yj.xiuFen': '修坟',
-        'yj.qiZuan': '启钻',
+        'yj.kaiRong': '開容',
+        'yj.xiuFen': '修墳',
+        'yj.qiZuan': '啟攢',
         'yj.poTu': '破土',
         'yj.anZang': '安葬',
         'yj.liBei': '立碑',
         'yj.chengFu': '成服',
         'yj.chuFu': '除服',
-        'yj.kaiShengFen': '开生坟',
-        'yj.heShouMu': '合寿木',
-        'yj.ruLian': '入殓',
+        'yj.kaiShengFen': '開生墳',
+        'yj.heShouMu': '合壽木',
+        'yj.ruLian': '入殮',
         'yj.yiJiu': '移柩',
         'yj.puDu': '普渡',
         'yj.ruZhai': '入宅',
         'yj.anXiang': '安香',
-        'yj.anMen': '安门',
+        'yj.anMen': '安門',
         'yj.xiuZao': '修造',
         'yj.qiJi': '起基',
-        'yj.dongTu': '动土',
+        'yj.dongTu': '動土',
         'yj.shangLiang': '上梁',
-        'yj.shuZhu': '竖柱',
-        'yj.kaiJing': '开井开池',
+        'yj.shuZhu': '豎柱',
+        'yj.kaiJing': '開井開池',
         'yj.zuoBei': '作陂放水',
         'yj.chaiXie': '拆卸',
         'yj.poWu': '破屋',
-        'yj.huaiYuan': '坏垣',
-        'yj.buYuan': '补垣',
+        'yj.huaiYuan': '壞垣',
+        'yj.buYuan': '補垣',
         'yj.faMuZuoLiang': '伐木做梁',
         'yj.zuoZhao': '作灶',
         'yj.jieChu': '解除',
-        'yj.kaiZhuYan': '开柱眼',
+        'yj.kaiZhuYan': '開柱眼',
         'yj.chuanPing': '穿屏扇架',
-        'yj.gaiWuHeJi': '盖屋合脊',
-        'yj.kaiCe': '开厕',
-        'yj.zaoCang': '造仓',
+        'yj.gaiWuHeJi': '蓋屋合脊',
+        'yj.kaiCe': '開廁',
+        'yj.zaoCang': '造倉',
         'yj.saiXue': '塞穴',
-        'yj.pingZhi': '平治道涂',
-        'yj.zaoQiao': '造桥',
-        'yj.zuoCe': '作厕',
+        'yj.pingZhi': '平治道途',
+        'yj.zaoQiao': '造橋',
+        'yj.zuoCe': '作廁',
         'yj.zhuDi': '筑堤',
-        'yj.kaiChi': '开池',
+        'yj.kaiChi': '開池',
         'yj.faMu': '伐木',
-        'yj.kaiQu': '开渠',
+        'yj.kaiQu': '開渠',
         'yj.jueJing': '掘井',
-        'yj.saoShe': '扫舍',
+        'yj.saoShe': '掃舍',
         'yj.fangShui': '放水',
         'yj.zaoWu': '造屋',
         'yj.heJi': '合脊',
         'yj.zaoChuChou': '造畜稠',
-        'yj.xiuMen': '修门',
+        'yj.xiuMen': '修門',
         'yj.dingSang': '定磉',
         'yj.zuoLiang': '作梁',
-        'yj.xiuShi': '修饰垣墙',
-        'yj.jiaMa': '架马',
-        'yj.kaiShi': '开市',
+        'yj.xiuShi': '修飾垣牆',
+        'yj.jiaMa': '架馬',
+        'yj.kaiShi': '開市',
         'yj.guaBian': '挂匾',
-        'yj.naChai': '纳财',
-        'yj.qiuCai': '求财',
-        'yj.kaiCang': '开仓',
-        'yj.maiChe': '买车',
-        'yj.zhiChan': '置产',
+        'yj.naChai': '納財',
+        'yj.qiuCai': '求財',
+        'yj.kaiCang': '開倉',
+        'yj.maiChe': '買車',
+        'yj.zhiChan': '置產',
         'yj.guYong': '雇庸',
-        'yj.chuHuoCai': '出货财',
-        'yj.anJiXie': '安机械',
-        'yj.zaoCheQi': '造车器',
-        'yj.jingLuo': '经络',
-        'yj.yunNiang': '酝酿',
+        'yj.chuHuoCai': '出貨財',
+        'yj.anJiXie': '安機械',
+        'yj.zaoCheQi': '造車器',
+        'yj.jingLuo': '經絡',
+        'yj.yunNiang': '醞釀',
         'yj.zuoRan': '作染',
-        'yj.guZhu': '鼓铸',
+        'yj.guZhu': '鼓鑄',
         'yj.zaoChuan': '造船',
         'yj.geMi': '割蜜',
-        'yj.zaiZhong': '栽种',
-        'yj.quYu': '取渔',
-        'yj.jieWang': '结网',
-        'yj.muYang': '牧养',
+        'yj.zaiZhong': '栽種',
+        'yj.quYu': '取漁',
+        'yj.jieWang': '結網',
+        'yj.muYang': '牧養',
         'yj.anDuiWei': '安碓磑',
-        'yj.xiYi': '习艺',
-        'yj.ruXue': '入学',
-        'yj.liFa': '理发',
+        'yj.xiYi': '習藝',
+        'yj.ruXue': '入學',
+        'yj.liFa': '理髮',
         'yj.tanBing': '探病',
-        'yj.jianGui': '见贵',
+        'yj.jianGui': '見貴',
         'yj.chengChuan': '乘船',
         'yj.duShui': '渡水',
-        'yj.zhenJiu': '针灸',
+        'yj.zhenJiu': '針灸',
         'yj.chuXing': '出行',
         'yj.yiXi': '移徙',
         'yj.fenJu': '分居',
-        'yj.TiTou': '剃头',
+        'yj.TiTou': '剃頭',
         'yj.zhengShou': '整手足甲',
-        'yj.naChu': '纳畜',
+        'yj.naChu': '納畜',
         'yj.buZhuo': '捕捉',
-        'yj.tianLie': '畋猎',
-        'yj.jiaoNiuMa': '教牛马',
-        'yj.huiQinYou': '会亲友',
+        'yj.tianLie': '畋獵',
+        'yj.jiaoNiuMa': '教牛馬',
+        'yj.huiQinYou': '會親友',
         'yj.fuRen': '赴任',
-        'yj.qiuYi': '求医',
+        'yj.qiuYi': '求醫',
         'yj.zhiBing': '治病',
-        'yj.ciSong': '词讼',
-        'yj.qiJiDongTu': '起基动土',
-        'yj.poWuHuaiYuan': '破屋坏垣',
-        'yj.gaiWu': '盖屋',
-        'yj.zaoCangKu': '造仓库',
+        'yj.ciSong': '詞訟',
+        'yj.qiJiDongTu': '起基動土',
+        'yj.poWuHuaiYuan': '破屋壞垣',
+        'yj.gaiWu': '蓋屋',
+        'yj.zaoCangKu': '造倉庫',
         'yj.liQuanJiaoYi': '立券交易',
         'yj.jiaoYi': '交易',
         'yj.liQuan': '立券',
-        'yj.anJi': '安机',
-        'yj.huiYou': '会友',
-        'yj.qiuYiLiaoBing': '求医疗病',
-        'yj.zhuShi': '诸事不宜',
-        'yj.yuShi': '馀事勿取',
-        'yj.xingSang': '行丧',
-        'yj.duanYi': '断蚁',
-        'yj.guiXiu': '归岫',
-        'xx.bi': '毕',
+        'yj.anJi': '安機',
+        'yj.huiYou': '會友',
+        'yj.qiuYiLiaoBing': '求醫療病',
+        'yj.zhuShi': '諸事不宜',
+        'yj.yuShi': '餘事勿取',
+        'yj.xingSang': '行喪',
+        'yj.duanYi': '斷蟻',
+        'yj.guiXiu': '歸岫',
+        'xx.bi': '畢',
         'xx.yi': '翼',
         'xx.ji': '箕',
         'xx.kui': '奎',
         'xx.gui': '鬼',
         'xx.di': '氐',
-        'xx.xu': '虚',
+        'xx.xu': '虛',
         'xx.wei': '危',
         'xx.zi': '觜',
-        'xx.zhen': '轸',
+        'xx.zhen': '軫',
         'xx.dou': '斗',
-        'xx.lou': '娄',
+        'xx.lou': '婁',
         'xx.liu': '柳',
         'xx.fang': '房',
         'xx.xin': '心',
@@ -7760,7 +8883,7 @@
         'xx.niu': '牛',
         'xx.vei': '胃',
         'xx.xing': '星',
-        'xx.zhang': '张',
+        'xx.zhang': '張',
         'xx.tail': '尾',
         'xx.qiang': '壁',
         'xx.jing': '井',
@@ -7782,50 +8905,50 @@
         'yx.shangXian': '上弦',
         'yx.jiuYe': '九夜',
         'yx.night': '宵',
-        'yx.jianYingTu': '渐盈凸',
+        'yx.jianYingTu': '漸盈凸',
         'yx.xiaoWang': '小望',
         'yx.wang': '望',
         'yx.jiWang': '既望',
         'yx.liDai': '立待',
         'yx.juDai': '居待',
-        'yx.qinDai': '寝待',
+        'yx.qinDai': '寢待',
         'yx.gengDai': '更待',
-        'yx.jianKuiTu': '渐亏凸',
+        'yx.jianKuiTu': '漸虧凸',
         'yx.xiaXian': '下弦',
         'yx.youMing': '有明',
-        'yx.eMeiCan': '蛾眉残',
-        'yx.can': '残',
-        'yx.xiao': '晓',
+        'yx.eMeiCan': '蛾眉殘',
+        'yx.can': '殘',
+        'yx.xiao': '曉',
         'yx.hui': '晦',
         'ny.sangZhe': '桑柘',
-        'ny.baiLa': '白蜡',
-        'ny.yangLiu': '杨柳',
+        'ny.baiLa': '白蠟',
+        'ny.yangLiu': '楊柳',
         'ny.jinBo': '金箔',
         'ny.haiZhong': '海中',
         'ny.daHai': '大海',
         'ny.shaZhong': '沙中',
-        'ny.luZhong': '炉中',
+        'ny.luZhong': '爐中',
         'ny.shanXia': '山下',
         'ny.daLin': '大林',
         'ny.pingDi': '平地',
         'ny.luPang': '路旁',
         'ny.biShang': '壁上',
-        'ny.jianFeng': '剑锋',
-        'ny.shanTou': '山头',
+        'ny.jianFeng': '劍鋒',
+        'ny.shanTou': '山頭',
         'ny.fuDeng': '覆灯',
-        'ny.jianXia': '涧下',
+        'ny.jianXia': '澗下',
         'ny.tianHe': '天河',
-        'ny.chengTou': '城头',
-        'ny.daYi': '大驿',
-        'ny.chaiChuan': '钗钏',
+        'ny.chengTou': '城頭',
+        'ny.daYi': '大驛',
+        'ny.chaiChuan': '釵釧',
         'ny.quanZhong': '泉中',
         'ny.daXi': '大溪',
         'ny.wuShang': '屋上',
-        'ny.piLi': '霹雳',
+        'ny.piLi': '霹靂',
         'ny.tianShang': '天上',
         'ny.songBo': '松柏',
         'ny.shiLiu': '石榴',
-        'ny.changLiu': '长流'
+        'ny.changLiu': '長流'
       },
       'en': {
         'tg.jia': 'Jia',
